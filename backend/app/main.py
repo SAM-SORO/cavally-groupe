@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.exc import OperationalError
@@ -31,7 +31,10 @@ from .config import get_settings
 from .db import base_disponible, initialiser_base
 from .excel import build_filename, build_workbook
 from .extraction import SUPPORTED_EXTENSIONS, ExtractionError, extract_supplies, ping_model
+from .models import Admin
+from .routes_admin import router as routeur_admin
 from .routes_client import FORMATS_CLIENT, auth as routeur_auth, demandes as routeur_demandes
+from .securite import admin_courant, admin_optionnel
 from .whatsapp import obtenir_relais
 
 logging.basicConfig(
@@ -79,6 +82,7 @@ app.add_middleware(
 
 app.include_router(routeur_auth)
 app.include_router(routeur_demandes)
+app.include_router(routeur_admin)
 
 
 @app.exception_handler(OperationalError)
@@ -101,12 +105,13 @@ def _erreur(message: str, status_code: int = 422) -> JSONResponse:
 
 
 @app.get("/api/health")
-def health(probe: bool = False) -> dict:
-    """Etat du service. `?probe=1` interroge reellement le modele configure.
+def health(probe: bool = False, admin: Admin | None = Depends(admin_optionnel)) -> dict:
+    """Etat du service, public (aucun secret).
 
-    La sonde coute quelques tokens mais donne l'erreur exacte renvoyee par
-    l'API — indispensable pour distinguer un modele retire, un quota atteint
-    et une cle refusee.
+    `?probe=1` interroge reellement le modele configure et donne l'erreur exacte
+    renvoyee par l'API — indispensable pour distinguer un modele retire, un
+    quota atteint et une cle refusee. Comme cette sonde consomme des tokens
+    Gemini, elle est **reservee aux admins**.
     """
     etat = {
         "status": "ok",
@@ -121,12 +126,24 @@ def health(probe: bool = False) -> dict:
         "formats_client": list(FORMATS_CLIENT),
     }
     if probe:
+        if admin is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="La sonde du modèle est réservée aux administrateurs.",
+            )
         etat["probe"] = ping_model()
     return etat
 
 
 @app.post("/api/process")
-async def process(fichier: UploadFile = File(..., alias="file")) -> Response:
+async def process(
+    fichier: UploadFile = File(..., alias="file"),
+    # Verrou d'acces : l'outil interne n'est ouvert qu'a un admin authentifie.
+    # Un visiteur anonyme comme un client externe connecte sont refuses ici,
+    # avant meme la lecture du fichier. La logique metier en dessous est
+    # inchangee.
+    admin: Admin = Depends(admin_courant),
+) -> Response:
     """Document uploade -> extraction Gemini -> devis .xlsx renvoye directement."""
     depart = time.perf_counter()
     nom = fichier.filename or "document"

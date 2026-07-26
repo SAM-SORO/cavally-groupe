@@ -93,6 +93,20 @@
   color: var(--ink-60);
 }
 
+/* Étiquette de l'espace équipe, sur la connexion admin. */
+.adm-etiquette {
+  display: inline-block;
+  margin-bottom: var(--sp-3);
+  padding: 0.24rem 0.6rem;
+  border-radius: var(--r-pill);
+  background: var(--brand-veil);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
 .cli-bascule a {
   color: var(--ink);
   font-weight: 600;

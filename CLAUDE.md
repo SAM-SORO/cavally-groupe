@@ -12,12 +12,14 @@ Le résultat doit être **propre, fiable et professionnel** : c'est un livrable 
 
 ### Deux espaces, volontairement indépendants
 
-| Espace | Qui | Ce qu'il fait |
-|---|---|---|
-| **Outil interne** (`/interne`) | l'équipe Cavally | document → Gemini → devis Excel |
-| **Espace clients** (`/`, `/inscription`, `/connexion`, `/depot`) | les clients externes | inscription, connexion, dépôt d'un document **relayé sur WhatsApp** |
+| Espace | Qui | Accès | Ce qu'il fait |
+|---|---|---|---|
+| **Outil interne** (`/interne`) | l'équipe Cavally | **admin authentifié obligatoire** | document → Gemini → devis Excel |
+| **Espace clients** (`/`, `/inscription`, `/connexion`, `/depot`) | les clients externes | compte client | inscription, connexion, dépôt d'un document **relayé sur WhatsApp** |
 
 ⚠️ **Les deux ne communiquent pas.** Le dépôt d'un client ne déclenche **ni extraction Gemini, ni génération Excel**. Le document part tel quel sur WhatsApp ; c'est ensuite l'équipe qui, de son côté, le repasse manuellement dans l'outil interne. Voir la section 12.
+
+⚠️ **L'outil interne est fermé.** Toutes ses routes et pages exigent une session **administrateur**. Un visiteur anonyme comme un client externe connecté sont refusés — y compris en appelant l'API directement. Voir la section 13.
 
 ---
 
@@ -42,8 +44,8 @@ Le résultat doit être **propre, fiable et professionnel** : c'est un livrable 
 | IA | **Gemini Flash** (Google AI Studio) | Lecture multimodale → JSON structuré |
 | Génération Excel | **openpyxl** | Fichier `.xlsx` avec **vraies formules** |
 | Lecture docs | **PyMuPDF / python-docx** | Normalisation légère si besoin |
-| Base de données | **PostgreSQL 17** (base `cavally`) | **Uniquement la table des clients** |
-| Auth | **bcrypt + JWT en cookie HttpOnly** | Sessions de l'espace clients |
+| Base de données | **PostgreSQL 17** (base `cavally`) | **Uniquement `clients` et `admins`** |
+| Auth | **bcrypt + JWT en cookie HttpOnly** | Sessions clients ET admins, cloisonnées |
 | Notification | **WhatsApp Cloud API** | Relais des demandes clients vers l'entreprise |
 
 La **clé API Gemini existe déjà**. Elle est lue depuis la variable d'environnement `GEMINI_API_KEY` (fichier `.env`, jamais committée). Le nom du modèle est configurable via `GEMINI_MODEL`.
@@ -218,8 +220,9 @@ Dépôt d'un document (Word / PDF / image)
 
 ### 12.2 Persistance — règle stricte
 
-- **Seuls les clients sont stockés.** Table `clients` uniquement :
-  `id, nom_complet, contact, email (unique), etablissement (nullable), mot_de_passe_hash, cree_le`.
+- **Deux tables, et deux seulement** :
+  - `clients` : `id, nom_complet, contact, email (unique), etablissement (nullable), mot_de_passe_hash, cree_le` ;
+  - `admins` : voir section 13.
 - ❌ **Les demandes / uploads ne sont PAS enregistrés.** Aucune table de commandes,
   de soumissions ou d'historique. Le document est relayé puis écarté de la mémoire.
 - Base **PostgreSQL 17** nommée `cavally`, connexion via `DATABASE_URL`.
@@ -289,3 +292,70 @@ une zone de glisser-déposer et un bouton, puis une confirmation.
 - ❌ Stocker le document du client sur disque ou en base.
 - ❌ Confirmer au client une transmission WhatsApp qui a échoué.
 - ❌ Exposer l'empreinte du mot de passe dans une réponse d'API.
+
+---
+
+## 13. Protection de l'OUTIL INTERNE (admins)
+
+L'outil interne n'est **pas** ouvert : il exige une session administrateur.
+Cette couche s'ajoute **par-dessus** le pipeline Gemini/Excel, dont la logique
+métier n'a pas bougé.
+
+### 13.1 Table `admins`
+
+`id, email (unique, identifiant de connexion), nom, mot_de_passe_hash, cree_le,
+derniere_connexion`. Distincte de `clients` : un compte client n'est jamais un
+compte admin, et réciproquement.
+
+### 13.2 Création du premier admin — hors du web
+
+❌ **Aucune page ni route d'inscription admin.** Les comptes se créent en ligne
+de commande uniquement :
+
+```bash
+cd backend
+python -m app.creer_admin --email chef@cavally.ci --nom "Chef d'équipe"
+# mot de passe demandé à la saisie (masquée)
+
+# ou sans interaction, via l'environnement :
+ADMIN_EMAIL=... ADMIN_NOM=... ADMIN_MOT_DE_PASSE=... python -m app.creer_admin
+
+# remplacer le mot de passe d'un admin existant :
+python -m app.creer_admin --email chef@cavally.ci --nom "Chef" --forcer
+```
+
+### 13.3 Cloisonnement des sessions
+
+Deux mécanismes, cumulés :
+
+1. **Deux cookies distincts** — `cavally_session` (client) et `cavally_admin`
+   (admin). Ils ne se recouvrent jamais.
+2. **Le rôle est scellé dans le JWT** (`role: "client" | "admin"`) et vérifié à
+   chaque requête. Renommer un cookie client en `cavally_admin` ne suffit donc
+   pas : le rôle du jeton est contrôlé et l'accès refusé.
+
+Le cloisonnement joue **dans les deux sens** : un admin n'accède pas non plus
+aux routes de l'espace clients.
+
+### 13.4 Ce qui est protégé
+
+| Route | Accès |
+|---|---|
+| `POST /api/process` | **admin uniquement** (dépendance `admin_courant`) |
+| `GET /api/health?probe=1` | **admin uniquement** — la sonde consomme des tokens Gemini |
+| `GET /api/health` | public (aucun secret : état, formats, drapeaux) |
+| `POST /api/admin/connexion` | public |
+| `POST /api/admin/deconnexion`, `GET /api/admin/moi` | admin |
+
+Côté interface, `/interne` est derrière `RouteAdmin` et redirige vers
+`/interne/connexion`. **Ce garde-fou n'est qu'un confort** : le contrôle qui
+fait autorité est la dépendance backend. Forcer l'affichage ne permet de
+générer aucun devis.
+
+### 13.5 À NE PAS FAIRE
+
+- ❌ Ouvrir une route d'inscription admin accessible publiquement.
+- ❌ Se contenter de masquer l'UI : le contrôle doit être côté backend.
+- ❌ Partager un même cookie ou un même jeton entre client et admin.
+- ❌ Modifier le pipeline Gemini/Excel pour ajouter l'autorisation : elle
+  s'ajoute en dépendance de route, le métier reste intact.

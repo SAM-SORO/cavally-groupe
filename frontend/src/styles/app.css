@@ -113,6 +113,32 @@
   color: var(--ink-45);
 }
 
+.entete__droite {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.entete__admin {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-left: var(--sp-4);
+  border-left: 1px solid var(--line);
+  min-width: 0;
+}
+
+.entete__admin-nom {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 20ch;
+}
+
 .statut {
   display: inline-flex;
   align-items: center;
@@ -1106,12 +1132,21 @@
   .marque__filet,
   .marque__produit,
   .statut__modele,
-  .statut__texte {
+  .statut__texte,
+  .entete__admin-nom {
     display: none;
   }
 
   .statut {
     padding: 0.45rem;
+  }
+
+  .entete__droite {
+    gap: var(--sp-2);
+  }
+
+  .entete__admin {
+    padding-left: var(--sp-2);
   }
 
   .fil__trait {

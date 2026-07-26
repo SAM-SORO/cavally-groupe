@@ -2,8 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-// Outil interne — inchangé, monté sur /interne.
+// Outil interne — logique inchangée, désormais derrière une session admin.
 import App from './App.jsx'
+import { FournisseurAdmin } from './admin/AdminContext.jsx'
+import PageConnexionAdmin from './admin/PageConnexionAdmin.jsx'
+import RouteAdmin from './admin/RouteAdmin.jsx'
 import { FournisseurAuth } from './client/AuthContext.jsx'
 import PageConnexion from './client/PageConnexion.jsx'
 import PageDepot from './client/PageDepot.jsx'
@@ -17,25 +20,35 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <FournisseurAuth>
-        <Routes>
-          {/* Espace clients externes */}
-          <Route path="/" element={<Navigate to="/depot" replace />} />
-          <Route path="/inscription" element={<PageInscription />} />
-          <Route path="/connexion" element={<PageConnexion />} />
-          <Route
-            path="/depot"
-            element={
-              <RouteProtegee>
-                <PageDepot />
-              </RouteProtegee>
-            }
-          />
+        <FournisseurAdmin>
+          <Routes>
+            {/* Espace clients externes */}
+            <Route path="/" element={<Navigate to="/depot" replace />} />
+            <Route path="/inscription" element={<PageInscription />} />
+            <Route path="/connexion" element={<PageConnexion />} />
+            <Route
+              path="/depot"
+              element={
+                <RouteProtegee>
+                  <PageDepot />
+                </RouteProtegee>
+              }
+            />
 
-          {/* Outil interne de l'équipe */}
-          <Route path="/interne" element={<App />} />
+            {/* Outil interne de l'équipe — réservé aux admins */}
+            <Route path="/interne/connexion" element={<PageConnexionAdmin />} />
+            <Route
+              path="/interne"
+              element={
+                <RouteAdmin>
+                  <App />
+                </RouteAdmin>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/depot" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/depot" replace />} />
+          </Routes>
+        </FournisseurAdmin>
       </FournisseurAuth>
     </BrowserRouter>
   </React.StrictMode>,

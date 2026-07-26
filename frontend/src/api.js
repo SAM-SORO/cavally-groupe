@@ -59,7 +59,14 @@ export async function genererDevis(fichier, signal) {
 
   let reponse
   try {
-    reponse = await fetch(`${BASE}/api/process`, { method: 'POST', body: donnees, signal })
+    // `credentials` : le cookie de session admin doit accompagner l'appel,
+    // y compris si le front est servi depuis une autre origine.
+    reponse = await fetch(`${BASE}/api/process`, {
+      method: 'POST',
+      body: donnees,
+      credentials: 'include',
+      signal,
+    })
   } catch (erreur) {
     if (erreur?.name === 'AbortError') throw erreur
     throw new Error("Le serveur d'analyse est injoignable. Vérifie que le backend est démarré.")
@@ -88,7 +95,7 @@ export async function genererDevis(fichier, signal) {
 
 export async function verifierApi() {
   try {
-    const reponse = await fetch(`${BASE}/api/health`)
+    const reponse = await fetch(`${BASE}/api/health`, { credentials: 'include' })
     if (!reponse.ok) return null
     return await reponse.json()
   } catch {

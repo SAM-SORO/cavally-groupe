@@ -2,16 +2,20 @@
 
 Deux espaces, **volontairement indépendants**.
 
-| Espace | URL | Qui | Ce qu'il fait |
+| Espace | URL | Accès | Ce qu'il fait |
 |---|---|---|---|
-| **Espace clients** | `/`, `/inscription`, `/connexion`, `/depot` | clients externes | inscription, connexion, dépôt d'un document **relayé sur WhatsApp** |
-| **Outil interne** | `/interne` | l'équipe | document → Gemini Flash → devis Excel |
+| **Espace clients** | `/`, `/inscription`, `/connexion`, `/depot` | compte client | inscription, connexion, dépôt d'un document **relayé sur WhatsApp** |
+| **Outil interne** | `/interne` | **admin authentifié** | document → Gemini Flash → devis Excel |
 
 ⚠️ **Ils ne communiquent pas.** Le dépôt d'un client ne déclenche ni extraction Gemini ni
 génération Excel : le document part tel quel sur WhatsApp, et c'est l'équipe qui le repasse
 ensuite, de son côté, dans l'outil interne.
 
-## Outil interne
+## Outil interne — réservé à l'équipe
+
+**Accès fermé.** `/interne` et `POST /api/process` exigent une session administrateur. Un
+visiteur anonyme comme un client externe connecté reçoivent `401`, y compris en appelant l'API
+directement. Voir *Administrateurs* plus bas pour créer le premier compte.
 
 Analyse une **liste de fournitures scolaires** (Word, PDF, capture ou photo) avec **Gemini
 Flash**, et renvoie un **devis Excel structuré** dont la colonne *Prix Unitaire* est laissée
@@ -175,21 +179,28 @@ backend/
     extraction.py     prompt, schéma de réponse, appel Gemini, parsing défensif
     excel.py          génération openpyxl (structure de un_exemple.xlsx)
 
+    # — Base et sécurité (communs) —
+    db.py             moteur SQLAlchemy, création des tables au démarrage
+    models.py         tables clients et admins (les deux seules)
+    securite.py       bcrypt, JWT, cookies HttpOnly, rôles client/admin
+
     # — Espace clients —
-    db.py             moteur SQLAlchemy, création de la table au démarrage
-    models.py         table clients (la seule)
     schemas_client.py validation inscription / connexion
-    securite.py       bcrypt, JWT, cookie HttpOnly, dépendance client_courant
     routes_client.py  /api/auth/* et /api/demandes
     whatsapp.py       relais isolé : RelaisSimule | RelaisCloudAPI
+
+    # — Administration —
+    routes_admin.py   /api/admin/* (connexion, déconnexion, session)
+    creer_admin.py    CLI de création d'un admin (aucune inscription web)
 frontend/
   src/
-    main.jsx          routage : espace clients sur /, outil interne sur /interne
+    main.jsx          routage : clients sur /, outil interne sur /interne
     App.jsx           outil interne (machine à états)
     api.js            client HTTP de l'outil interne
     components/       Header, Stepper, Dropzone, Analysis, Result, Failure, Aside, Icons
     client/           AuthContext, Coquille, Champ, PageInscription,
                       PageConnexion, PageDepot, RouteProtegee, api.js
+    admin/            AdminContext, PageConnexionAdmin, RouteAdmin, api.js
     styles/           theme.css (charte) + app.css (interne) + client.css (clients)
 ```
 
@@ -279,6 +290,57 @@ Puis renseigner `DATABASE_URL` dans `backend/.env` :
 ```
 DATABASE_URL=postgresql+psycopg://postgres:MOT_DE_PASSE@localhost:5432/cavally
 ```
+
+## Administrateurs
+
+L'outil interne est protégé par une session admin, distincte de celle des clients.
+
+### Créer le premier admin
+
+Il n'existe **aucune page ni route d'inscription admin**. Les comptes se créent uniquement en
+ligne de commande :
+
+```bash
+cd backend
+python -m app.creer_admin --email chef@cavally.ci --nom "Chef d'équipe"
+# le mot de passe est demandé à la saisie, masquée, avec confirmation
+```
+
+Sans interaction (CI, provisionnement) :
+
+```bash
+ADMIN_EMAIL=chef@cavally.ci ADMIN_NOM="Chef d'équipe" ADMIN_MOT_DE_PASSE=... \
+  python -m app.creer_admin
+```
+
+Remplacer le mot de passe d'un compte existant : ajouter `--forcer`.
+
+La connexion se fait ensuite sur **`/interne/connexion`**.
+
+### Cloisonnement des sessions
+
+Deux mécanismes cumulés, parce qu'un seul ne suffit pas :
+
+1. **Deux cookies distincts** — `cavally_session` (client) et `cavally_admin` (admin).
+2. **Le rôle est scellé dans le JWT** (`role: "client" | "admin"`) et vérifié à chaque requête.
+
+Conséquence : renommer un cookie client en `cavally_admin` ne donne aucun accès — le rôle du
+jeton est contrôlé et la requête rejetée. Le cloisonnement joue **dans les deux sens** : un
+admin n'accède pas non plus aux routes de l'espace clients.
+
+### Ce qui est protégé
+
+| Route | Accès |
+|---|---|
+| `POST /api/process` | admin uniquement |
+| `GET /api/health?probe=1` | admin uniquement — la sonde consomme des tokens Gemini |
+| `GET /api/health` | public (aucun secret) |
+| `POST /api/admin/connexion` | public |
+| `POST /api/admin/deconnexion`, `GET /api/admin/moi` | admin |
+
+Côté interface, `/interne` redirige vers `/interne/connexion` si la session manque. **Ce
+garde-fou n'est qu'un confort** : l'autorité est la dépendance backend, forcer l'affichage ne
+permet de générer aucun devis.
 
 ## Quotas Gemini — à connaître
 
