@@ -64,6 +64,8 @@ aucune configuration CORS n'est nécessaire en développement.
 | `GEMINI_MODEL` | `gemini-flash-latest` | Modèle Flash utilisé pour l'extraction. |
 | `MAX_UPLOAD_MB` | `18` | Taille maximale d'un document. |
 | `CORS_ORIGINS` | `http://localhost:5173,…` | Origines autorisées (utile hors dev). |
+| `GOOGLE_CLIENT_ID` | — | Active « Continuer avec Google ». Vide = bouton masqué. |
+| `STOCKAGE_CV` | `stockage/cv` | Dossier des CV de répétiteurs (hors dépôt git). |
 
 ---
 
@@ -180,8 +182,9 @@ backend/
     excel.py          génération openpyxl (structure de un_exemple.xlsx)
 
     # — Base et sécurité (communs) —
-    db.py             moteur SQLAlchemy, création des tables au démarrage
-    models.py         tables clients, admins et repetiteur (les trois seules)
+    db.py             moteur SQLAlchemy, création des tables + petites migrations
+    google_auth.py    vérification du jeton d'identité Google (facultatif)
+    models.py         tables clients, admins et repetiteurs (les trois seules)
     securite.py       bcrypt, JWT, cookies HttpOnly, rôles client/admin
 
     # — Espace clients —
@@ -205,6 +208,7 @@ frontend/
     api.js            client HTTP de l'outil interne
     components/       Header, Stepper, Dropzone, Analysis, Result, Failure, Aside, Icons
     client/           AuthContext, Coquille (navbar), Champ, AppelConnexion,
+                      ConnexionGoogle, navigation.js (paramètre ?retour=),
                       PageInscription, PageConnexion, PageDepot,
                       PageTemoignages + temoignages.js,
                       PageRepetiteurs + ModalRepetiteur, api.js
@@ -215,9 +219,12 @@ frontend/
 ### Navigation publique
 
 Trois menus — **Accueil** (`/`, dépôt d'une liste), **Témoignage**
-(`/temoignages`), **Répétiteur** (`/repetiteurs`). Même règle partout : la page
-est consultable sans compte, l'**action** demande une session. Un visiteur voit
-donc la page et l'invitation à s'identifier, plutôt qu'une redirection.
+(`/temoignages`), **Répétiteur** (`/repetiteurs`).
+
+Même règle partout : la page est consultable sans compte, et **rien ne barre la route avant le
+geste**. Sur l'accueil, un visiteur choisit son document et clique sur « Envoyer » ; c'est
+seulement là que la session est vérifiée, et l'invitation à s'identifier apparaît sous le
+bouton. Le lien porte `?retour=`, borné aux chemins internes, pour le ramener où il en était.
 
 ---
 
@@ -258,7 +265,36 @@ reste utilisable** — il n'en dépend pas — et l'espace clients répond `503`
   inter-site. Passer `COOKIE_SECURISE=true` dès que le site est servi en HTTPS.
 - `JWT_SECRET` doit être défini en production. Sans lui, un secret éphémère est généré :
   l'application tourne, mais les sessions tombent à chaque redémarrage.
-- Une connexion refusée renvoie **le même message** que l'email existe ou non.
+- Une connexion refusée renvoie **le même message** que l'email existe ou non, et qu'il ait ou
+  non un mot de passe local.
+
+### Connexion Google (facultative)
+
+Un bouton « Continuer avec Google » s'ajoute à côté du formulaire, pour qui préfère. Les deux
+chemins aboutissent au même compte.
+
+Le navigateur récupère un **jeton d'identité** ; c'est le serveur qui le vérifie
+(`backend/app/google_auth.py`) : signature contrôlée auprès de Google, émetteur, audience,
+expiration et `email_verified`. Un jeton n'est jamais cru sur parole.
+
+Si l'adresse correspond déjà à un compte local, les deux sont **rattachés** — Google a vérifié
+cette adresse, et cela évite deux comptes pour une seule personne. Un compte ouvert avec Google
+n'a pas de mot de passe : `/api/auth/connexion` le refuse, sans jamais le dire.
+
+**Activation** — dans Google Cloud Console : *APIs & Services > Credentials > Create credentials
+> OAuth client ID*, type « Web application », puis ajouter `http://localhost:5173` (et l'URL de
+production) dans *Authorized JavaScript origins*. Reporter le **Client ID** dans
+`GOOGLE_CLIENT_ID` (`backend/.env`). Le *Client secret* n'est pas utilisé par ce flux.
+
+Tant que la variable est vide, le bouton n'apparaît pas et la route répond proprement : rien ne
+casse. Le client ID n'est pas un secret — il est servi au front par `/api/health` pour ne pas
+avoir à le configurer à deux endroits.
+
+### Le numéro de téléphone
+
+Google ne fournit pas de numéro. Plutôt qu'un formulaire de plus juste après la connexion, il
+est demandé **au moment du dépôt** — là où il sert, puisque c'est par lui que l'équipe rappelle
+— puis conservé sur le compte pour n'être réclamé qu'une fois.
 
 ### Relais WhatsApp
 
@@ -291,6 +327,7 @@ Trois états :
 |---|---|---|---|
 | `POST` | `/api/auth/inscription` | non | crée le client, ouvre la session |
 | `POST` | `/api/auth/connexion` | non | ouvre la session |
+| `POST` | `/api/auth/google` | non | vérifie le jeton Google, crée ou retrouve le compte |
 | `POST` | `/api/auth/deconnexion` | non | efface le cookie |
 | `GET` | `/api/auth/moi` | oui | session courante |
 | `POST` | `/api/demandes` | oui | relaie le document, **ne stocke rien** |
@@ -305,7 +342,7 @@ connectés ; un visiteur y voit l'invitation à s'identifier.
 
 ### Relation
 
-Un client **peut** être répétiteur, ou non. La table `repetiteur` porte une clé étrangère
+Un client **peut** être répétiteur, ou non. La table `repetiteurs` porte une clé étrangère
 `client_id` **unique** vers `clients`, avec `ON DELETE CASCADE` : un client, au plus un profil.
 Se réenregistrer **remplace** le profil au lieu d'en créer un second, et l'ancien CV est effacé
 du disque — après que le remplacement soit acté en base, jamais avant.
@@ -354,7 +391,7 @@ Puis renseigner `DATABASE_URL` dans `backend/.env` :
 DATABASE_URL=postgresql+psycopg://postgres:MOT_DE_PASSE@localhost:5432/cavally
 ```
 
-Trois tables, créées au démarrage : `clients`, `admins`, `repetiteur`. Pas de quatrième —
+Trois tables, créées au démarrage : `clients`, `admins`, `repetiteurs`. Pas de quatrième —
 ni demandes, ni commandes, ni historique d'uploads.
 
 ---

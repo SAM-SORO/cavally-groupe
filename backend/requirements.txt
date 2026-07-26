@@ -14,3 +14,7 @@ bcrypt==5.0.0
 PyJWT==2.13.0
 pydantic[email]>=2.12.5
 httpx==0.28.1
+
+# Connexion Google : verification du jeton d'identite (signature, audience).
+# Deja tire par google-genai, epingle ici parce qu'on en depend directement.
+google-auth==2.56.2

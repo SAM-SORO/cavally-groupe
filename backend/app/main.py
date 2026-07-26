@@ -33,6 +33,7 @@ from .config import get_settings
 from .db import base_disponible, initialiser_base
 from .excel import build_filename, build_workbook
 from .extraction import SUPPORTED_EXTENSIONS, ExtractionError, extract_supplies, ping_model
+from .google_auth import configure as google_configure
 from .models import Admin
 from .routes_admin import router as routeur_admin
 from .routes_client import FORMATS_CLIENT, auth as routeur_auth, demandes as routeur_demandes
@@ -130,6 +131,9 @@ def health(probe: bool = False, admin: Admin | None = Depends(admin_optionnel)) 
         "whatsapp_configure": obtenir_relais().configure,
         "formats_client": list(FORMATS_CLIENT),
         "formats_cv": list(FORMATS_CV),
+        # Le front n'affiche le bouton Google que si le serveur sait le traiter.
+        "google_configure": google_configure(),
+        "google_client_id": settings.google_client_id,
     }
     if probe:
         if admin is None:

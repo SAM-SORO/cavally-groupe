@@ -1,21 +1,30 @@
-import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useCallback, useState } from 'react'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { Spinner } from '../components/Icons.jsx'
 import { useAuth } from './AuthContext.jsx'
 import Champ from './Champ.jsx'
+import ConnexionGoogle from './ConnexionGoogle.jsx'
 import { CoquilleAuth } from './Coquille.jsx'
+import { avecRetour, destinationRetour } from './navigation.js'
 
 export default function PageConnexion() {
   const { client, connecter } = useAuth()
   const naviguer = useNavigate()
+  const [parametres] = useSearchParams()
 
   const [email, setEmail] = useState('')
   const [motDePasse, setMotDePasse] = useState('')
   const [erreur, setErreur] = useState(null)
   const [envoi, setEnvoi] = useState(false)
 
-  if (client) return <Navigate to="/depot" replace />
+  // Là où l'utilisateur voulait aller avant d'être invité à s'identifier.
+  const retour = destinationRetour(parametres)
+
+  // Référence stable : `ConnexionGoogle` la met en dépendance d'un effet.
+  const apresConnexion = useCallback(() => naviguer(retour, { replace: true }), [naviguer, retour])
+
+  if (client) return <Navigate to={retour} replace />
 
   const soumettre = async (evenement) => {
     evenement.preventDefault()
@@ -23,7 +32,7 @@ export default function PageConnexion() {
     setEnvoi(true)
     try {
       await connecter(email.trim(), motDePasse)
-      naviguer('/depot', { replace: true })
+      naviguer(retour, { replace: true })
     } catch (exception) {
       setErreur(exception.message)
       setEnvoi(false)
@@ -70,10 +79,12 @@ export default function PageConnexion() {
             )}
           </button>
         </form>
+
+        <ConnexionGoogle onConnecte={apresConnexion} />
       </section>
 
       <p className="cli-bascule">
-        Pas encore de compte ? <Link to="/inscription">Créer un compte</Link>
+        Pas encore de compte ? <Link to={avecRetour('/inscription', retour)}>Créer un compte</Link>
       </p>
     </CoquilleAuth>
   )

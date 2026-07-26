@@ -443,6 +443,41 @@
 }
 
 /* --------------------------------------------------------------------------
+   6 bis. Connexion Google
+   -------------------------------------------------------------------------- */
+
+.cli-google {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+/* Séparateur « ou » : un filet de part et d'autre du mot. */
+.cli-ou {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: 0.8rem;
+  color: var(--ink-45);
+}
+
+.cli-ou::before,
+.cli-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* Le bouton est rendu par Google : on ne peut que le centrer. */
+.cli-google__bouton {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+/* --------------------------------------------------------------------------
    7. Navigation principale — Accueil / Témoignage / Répétiteur
    -------------------------------------------------------------------------- */
 

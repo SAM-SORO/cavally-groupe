@@ -12,6 +12,7 @@ import {
 } from './api.js'
 import AppelConnexion from './AppelConnexion.jsx'
 import { useAuth } from './AuthContext.jsx'
+import Champ from './Champ.jsx'
 import { CoquillePublique } from './Coquille.jsx'
 
 const LIBELLES_FORMAT = {
@@ -25,12 +26,16 @@ const LIBELLES_FORMAT = {
 }
 
 export default function PageDepot() {
-  const { client } = useAuth()
+  const { client, rafraichir } = useAuth()
 
   const [fichier, setFichier] = useState(null)
   const [statut, setStatut] = useState('repos') // repos | envoi | confirme
   const [erreur, setErreur] = useState(null)
   const [survol, setSurvol] = useState(false)
+  // Se déclenche au moment de l'envoi, pas à l'ouverture de la page.
+  const [besoinConnexion, setBesoinConnexion] = useState(false)
+  // Réclamé seulement si le compte n'a pas encore de numéro (ouverture Google).
+  const [contact, setContact] = useState('')
 
   const compteur = useRef(0)
   const input = useRef(null)
@@ -61,12 +66,30 @@ export default function PageDepot() {
 
   const envoyer = async () => {
     if (!fichier) return
+
+    // La session n'est vérifiée qu'ici : on laisse choisir son document, et
+    // on ne demande de s'identifier qu'au moment de l'envoi.
+    if (!client) {
+      setErreur(null)
+      setBesoinConnexion(true)
+      return
+    }
+
     setErreur(null)
     setStatut('envoi')
     try {
-      await deposerDocument(fichier)
+      await deposerDocument(fichier, contact.trim())
+      // Le numéro vient peut-être d'être enregistré côté serveur : on relit la
+      // session pour que la confirmation affiche la bonne valeur.
+      if (!client.contact) await rafraichir()
       setStatut('confirme')
     } catch (exception) {
+      // Session expirée entre-temps : même invitation que pour un visiteur.
+      if (exception.statut === 401) {
+        setBesoinConnexion(true)
+        setStatut('repos')
+        return
+      }
       setErreur(exception.message)
       setStatut('repos')
     }
@@ -75,22 +98,8 @@ export default function PageDepot() {
   const recommencer = () => {
     setFichier(null)
     setErreur(null)
+    setBesoinConnexion(false)
     setStatut('repos')
-  }
-
-  // — Visiteur sans compte : la page reste visible, seul le dépôt est fermé —
-  if (!client) {
-    return (
-      <CoquillePublique>
-        <section className="cli-panneau">
-          <h1 className="cli-panneau__titre">Déposer une liste de fournitures</h1>
-          <p className="cli-panneau__texte">
-            Word, PDF ou photo de la liste. Notre équipe s’occupe du reste.
-          </p>
-          <AppelConnexion texte="Le dépôt est réservé aux titulaires d’un compte." />
-        </section>
-      </CoquillePublique>
-    )
   }
 
   // — Confirmation —
@@ -102,7 +111,7 @@ export default function PageDepot() {
           <h1 className="cli-panneau__titre">Demande bien reçue</h1>
           <p className="cli-panneau__texte">
             Votre liste est transmise à notre équipe. Nous la traitons et revenons vers vous
-            au {client?.contact}.
+            au {client?.contact || contact}.
           </p>
           <p className="cli-panneau__fichier">{fichier?.name}</p>
           <button type="button" className="bouton bouton--discret" onClick={recommencer}>
@@ -180,10 +189,32 @@ export default function PageDepot() {
           </button>
         )}
 
+        {/* Le compte existe mais n'a pas de numéro : c'est ici qu'il sert,
+            c'est donc ici qu'on le demande — une seule fois. */}
+        {client && !client.contact && (
+          <Champ
+            libelle="Téléphone"
+            type="tel"
+            valeur={contact}
+            onChange={setContact}
+            autoComplete="tel"
+            inputMode="tel"
+            placeholder="+225 07 97 99 19 99"
+            aide="C’est par là que notre équipe vous recontacte."
+          />
+        )}
+
         {erreur && (
           <p className="cli-alerte" role="alert">
             {erreur}
           </p>
+        )}
+
+        {besoinConnexion && (
+          <AppelConnexion
+            texte="Votre document est prêt. Identifiez-vous pour l’envoyer — cela prend quelques secondes."
+            retour="/"
+          />
         )}
 
         <button

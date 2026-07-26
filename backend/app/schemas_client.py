@@ -13,6 +13,20 @@ LONGUEUR_MAX_MOT_DE_PASSE = 128
 _SEPARATEURS = re.compile(r"[\s.\-()/]")
 _CONTACT_VALIDE = re.compile(r"^\+?\d{8,15}$")
 
+ERREUR_CONTACT = "Numéro de téléphone invalide (8 à 15 chiffres, indicatif optionnel)."
+
+
+def normaliser_contact(valeur: object) -> str:
+    """Retire les separateurs et valide. Leve `ValueError` si le numero ne va pas.
+
+    Extrait du modele d'inscription : le depot d'une demande s'en sert aussi,
+    pour completer le numero manquant d'un compte ouvert avec Google.
+    """
+    texte = _SEPARATEURS.sub("", str(valeur or "").strip())
+    if not _CONTACT_VALIDE.match(texte):
+        raise ValueError(ERREUR_CONTACT)
+    return texte
+
 
 class InscriptionEntree(BaseModel):
     nom_complet: str = Field(min_length=2, max_length=120)
@@ -36,10 +50,7 @@ class InscriptionEntree(BaseModel):
     @field_validator("contact", mode="before")
     @classmethod
     def _normaliser_contact(cls, valeur: object) -> str:
-        texte = _SEPARATEURS.sub("", str(valeur or "").strip())
-        if not _CONTACT_VALIDE.match(texte):
-            raise ValueError("Numéro de téléphone invalide (8 à 15 chiffres, indicatif optionnel).")
-        return texte
+        return normaliser_contact(valeur)
 
     @field_validator("email", mode="after")
     @classmethod
@@ -57,12 +68,20 @@ class ConnexionEntree(BaseModel):
         return str(valeur).lower()
 
 
+class GoogleEntree(BaseModel):
+    """Le jeton d'identite renvoye par le bouton Google, cote navigateur."""
+
+    credential: str = Field(min_length=20, max_length=4096)
+
+
 class ClientSortie(BaseModel):
     """Ce que le front reçoit — jamais l'empreinte du mot de passe."""
 
     id: int
     nom_complet: str
-    contact: str
+    # `None` pour un compte ouvert avec Google : le numero est demande au
+    # moment du depot. Le front s'en sert pour savoir s'il doit le reclamer.
+    contact: str | None
     email: str
     etablissement: str | None
 

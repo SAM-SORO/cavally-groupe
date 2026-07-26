@@ -51,6 +51,8 @@ class Settings:
     jwt_algorithme: str
     session_duree_heures: int
     cookie_securise: bool
+    # Connexion Google. Vide = fonctionnalite desactivee, sans rien casser.
+    google_client_id: str
     whatsapp: ParametresWhatsApp
     cors_origins: list[str] = field(default_factory=list)
 
@@ -80,6 +82,7 @@ def get_settings() -> Settings:
         session_duree_heures=int(os.getenv("SESSION_DUREE_HEURES", "12") or 12),
         # Cookie `Secure` : a activer des que le site est servi en HTTPS.
         cookie_securise=os.getenv("COOKIE_SECURISE", "false").strip().lower() in {"1", "true", "yes"},
+        google_client_id=os.getenv("GOOGLE_CLIENT_ID", "").strip(),
         whatsapp=ParametresWhatsApp(
             token=os.getenv("WHATSAPP_TOKEN", "").strip(),
             phone_number_id=os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip(),

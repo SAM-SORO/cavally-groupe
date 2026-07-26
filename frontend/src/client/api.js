@@ -75,11 +75,23 @@ export const connecter = (email, motDePasse) =>
 export const deconnecter = () =>
   appeler('/api/auth/deconnexion', { methode: 'POST', json: false })
 
+/** Ouvre la session à partir du jeton d'identité renvoyé par le bouton Google. */
+export const connecterAvecGoogle = (credential) =>
+  appeler('/api/auth/google', { methode: 'POST', corps: { credential } })
+
 export const recupererSession = () => appeler('/api/auth/moi')
 
-export function deposerDocument(fichier) {
+/** État du service — sert à savoir si la connexion Google est disponible. */
+export const etatService = () => appeler('/api/health')
+
+/**
+ * Dépose une demande. `contact` n'est envoyé que si le compte n'a pas encore
+ * de numéro (cas d'une ouverture avec Google) ; le serveur le retient alors.
+ */
+export function deposerDocument(fichier, contact) {
   const donnees = new FormData()
   donnees.append('file', fichier)
+  if (contact) donnees.append('contact', contact)
   return appeler('/api/demandes', { methode: 'POST', corps: donnees })
 }
 

@@ -1,9 +1,9 @@
 """Modeles persistes.
 
 Trois tables :
-- `clients`    : les comptes de l'espace externe ;
-- `admins`     : les comptes de l'equipe, qui seuls ouvrent l'outil interne ;
-- `repetiteur` : le profil d'encadrement d'un client, avec la reference de son CV.
+- `clients`     : les comptes de l'espace externe ;
+- `admins`      : les comptes de l'equipe, qui seuls ouvrent l'outil interne ;
+- `repetiteurs` : le profil d'encadrement d'un client, avec la reference de son CV.
 
 Ce qui n'est PAS stocke reste inchange : les demandes de devis. Le document
 depose par un client part vers WhatsApp et n'est pas conserve. Le CV d'un
@@ -27,12 +27,18 @@ class Client(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nom_complet: Mapped[str] = mapped_column(String(120), nullable=False)
-    contact: Mapped[str] = mapped_column(String(32), nullable=False)
+    # Nullable depuis l'arrivee de Google : le fournisseur ne donne pas de
+    # numero. Il est demande au moment du depot, quand il devient utile.
+    contact: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # Stocke en minuscules : sert d'identifiant de connexion.
     email: Mapped[str] = mapped_column(String(190), nullable=False, unique=True, index=True)
     # Facultatif : vide pour un particulier.
     etablissement: Mapped[str | None] = mapped_column(String(160), nullable=True)
-    mot_de_passe_hash: Mapped[str] = mapped_column(String(120), nullable=False)
+    # Nullable : un compte ouvert avec Google n'a pas de mot de passe local.
+    # La connexion par mot de passe refuse donc ces comptes.
+    mot_de_passe_hash: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Identifiant stable du compte Google (`sub`), absent pour un compte local.
+    google_sub: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     cree_le: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), default=lambda: datetime.now(timezone.utc)
     )
@@ -83,8 +89,7 @@ class Repetiteur(Base):
     stockage, voir `stockage.py`.
     """
 
-    # Nom au singulier : celui retenu au cahier des charges.
-    __tablename__ = "repetiteur"
+    __tablename__ = "repetiteurs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     client_id: Mapped[int] = mapped_column(

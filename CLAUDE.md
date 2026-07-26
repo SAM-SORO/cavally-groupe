@@ -47,8 +47,9 @@ Témoignage, Répétiteur. Voir la section 14.
 | IA | **Gemini Flash** (Google AI Studio) | Lecture multimodale → JSON structuré |
 | Génération Excel | **openpyxl** | Fichier `.xlsx` avec **vraies formules** |
 | Lecture docs | **PyMuPDF / python-docx** | Normalisation légère si besoin |
-| Base de données | **PostgreSQL 17** (base `cavally`) | **Uniquement `clients`, `admins` et `repetiteur`** |
+| Base de données | **PostgreSQL 17** (base `cavally`) | **Uniquement `clients`, `admins` et `repetiteurs`** |
 | Auth | **bcrypt + JWT en cookie HttpOnly** | Sessions clients ET admins, cloisonnées |
+| Auth (option) | **Google Identity Services + google-auth** | « Continuer avec Google », jeton vérifié côté serveur |
 | Notification | **WhatsApp Cloud API** | Relais des demandes clients vers l'entreprise |
 
 La **clé API Gemini existe déjà**. Elle est lue depuis la variable d'environnement `GEMINI_API_KEY` (fichier `.env`, jamais committée). Le nom du modèle est configurable via `GEMINI_MODEL`.
@@ -226,7 +227,7 @@ Dépôt d'un document (Word / PDF / image)
 - **Trois tables, et trois seulement** :
   - `clients` : `id, nom_complet, contact, email (unique), etablissement (nullable), mot_de_passe_hash, cree_le` ;
   - `admins` : voir section 13 ;
-  - `repetiteur` : voir section 14.2 — profil durable, lié aux clients.
+  - `repetiteurs` : voir section 14.2 — profil durable, lié aux clients.
 - ❌ **Les demandes / uploads de listes ne sont PAS enregistrés.** Aucune table de
   commandes, de soumissions ou d'historique. Le document est relayé puis écarté
   de la mémoire. Cette règle n'a pas bougé : le CV d'un répétiteur est une
@@ -238,6 +239,10 @@ Dépôt d'un document (Word / PDF / image)
 
 ### 12.3 Authentification
 
+**Deux chemins d'entrée, un seul compte.** Le formulaire email + mot de passe
+reste le chemin principal ; « Continuer avec Google » est proposé à côté, pour
+qui préfère. Les deux aboutissent au même compte et à la même session.
+
 - Mot de passe **jamais en clair** : bcrypt (coût 12) sur un pré-hachage
   SHA-256/base64 — ce pré-hachage évite la troncature de bcrypt à 72 octets.
 - Session par **JWT dans un cookie `HttpOnly` + `SameSite=Lax`** : illisible
@@ -245,8 +250,40 @@ Dépôt d'un document (Word / PDF / image)
   une requête inter-site. `COOKIE_SECURISE=true` dès que le site est en HTTPS.
 - `JWT_SECRET` obligatoire en production. Sans lui, un secret éphémère est
   généré : l'app tourne mais les sessions tombent à chaque redémarrage.
-- Connexion refusée → **message identique** que l'email existe ou non.
+- Connexion refusée → **message identique** que l'email existe ou non, **et
+  qu'il ait ou non un mot de passe local**. Un compte ouvert avec Google n'a
+  pas d'empreinte : `/api/auth/connexion` le refuse sans jamais le dire.
 - Route protégée : dépendance `client_courant`.
+
+#### Connexion Google (`GOOGLE_CLIENT_ID`, facultatif)
+
+`POST /api/auth/google` reçoit le **jeton d'identité** obtenu par le bouton
+Google Identity Services et le vérifie côté serveur (`backend/app/google_auth.py`) :
+signature contrôlée auprès de Google, émetteur, audience, expiration, et
+`email_verified`. **Le jeton n'est jamais cru sur parole** — sans cette
+vérification, n'importe qui pourrait en forger un.
+
+Trois cas, dans cet ordre : `google_sub` connu → on retrouve le compte ; email
+déjà en compte local → on **rattache** les deux (Google a vérifié l'adresse,
+c'est la même personne, et cela évite deux comptes pour une seule adresse) ;
+sinon → création.
+
+Colonnes concernées sur `clients` : `google_sub` (unique, nullable),
+`mot_de_passe_hash` **nullable**, `contact` **nullable**.
+
+Ce flux ne demande **aucun secret d'application** : seul le `client_id` est
+nécessaire, et il n'est pas secret — il est de toute façon visible dans la
+page. Il est servi au front par `/api/health` pour ne pas le configurer à deux
+endroits. Tant qu'il est vide, le bouton n'apparaît pas et la route répond
+proprement : même principe que le relais WhatsApp simulé.
+
+#### Le numéro de téléphone, demandé au bon moment
+
+Google ne fournit pas de numéro. Plutôt que d'imposer un formulaire de plus
+juste après la connexion, le numéro est réclamé **au dépôt** — là où il sert,
+puisque c'est par lui que l'équipe rappelle. `POST /api/demandes` accepte un
+champ `contact` optionnel : si le compte n'en a pas, il devient obligatoire, il
+est validé, puis **conservé sur le compte** pour n'être demandé qu'une fois.
 
 ### 12.4 Relais WhatsApp
 
@@ -278,6 +315,7 @@ Le reste du code ne connaît que `obtenir_relais()` et `envoyer_demande()`.
 |---|---|---|---|
 | `POST` | `/api/auth/inscription` | non | crée le client, ouvre la session |
 | `POST` | `/api/auth/connexion` | non | ouvre la session |
+| `POST` | `/api/auth/google` | non | vérifie le jeton Google, crée ou retrouve le compte |
 | `POST` | `/api/auth/deconnexion` | non | efface le cookie |
 | `GET` | `/api/auth/moi` | oui | session courante |
 | `POST` | `/api/demandes` | oui | relaie le document sur WhatsApp, **ne stocke rien** |
@@ -412,11 +450,24 @@ Trois menus, dans `client/Coquille.jsx` (`CoquillePublique`) :
 | **Témoignage** | `/temoignages` | grille de vidéos de témoignages |
 | **Répétiteur** | `/repetiteurs` | CV des encadreurs + enregistrement |
 
-**Règle d'accès, la même partout : la page est publique, l'action est fermée.**
-Un visiteur voit les trois pages ; déposer une liste ou enregistrer un CV exige
-une session client, et l'invitation à s'identifier (`AppelConnexion`) remplace
-alors le bouton. Ce n'est pas une redirection : on ne renvoie plus personne vers
-`/connexion` sans lui avoir montré la page.
+**Règle d'accès, la même partout : la page est publique, et rien ne barre la
+route avant le geste lui-même.**
+
+Sur l'accueil, un visiteur voit la zone de dépôt, choisit son document et clique
+sur « Envoyer » — **c'est seulement là** que la session est vérifiée, et
+l'invitation à s'identifier (`AppelConnexion`) apparaît sous le bouton. Aucun
+message d'entrée, aucune redirection : afficher « réservé aux titulaires d'un
+compte » avant même que la personne ait tenté quoi que ce soit est bloquant pour
+rien.
+
+Le lien porte `?retour=` pour ramener l'utilisateur d'où il vient une fois
+identifié. `destinationRetour()` (`client/navigation.js`) **borne cette valeur
+aux chemins internes** : un `//exemple.com` serait lu par le navigateur comme
+une URL absolue et transformerait notre page de connexion en redirection
+ouverte.
+
+Un `401` renvoyé en cours de route (session expirée entre le choix du fichier et
+l'envoi) déclenche exactement la même invitation.
 
 `/depot` redirige vers `/` — l'ancienne adresse continue de fonctionner.
 Les pages d'authentification gardent la coquille `CoquilleAuth`, sans navbar :
@@ -426,7 +477,7 @@ En dessous de **860 px**, la navbar passe sous le logo, sur toute la largeur.
 
 ### 14.2 Répétiteurs — table, relation et stockage du CV
 
-**Table `repetiteur`** (nom au singulier, celui du cahier des charges) :
+**Table `repetiteurs`** :
 
 | Colonne | Rôle |
 |---|---|
@@ -478,5 +529,9 @@ soit une URL d'intégration YouTube/Vimeo — `estIntegration()` choisit entre
 - ❌ Créer une table pour les témoignages : un fichier de configuration suffit.
 - ❌ Faire confiance au nom de fichier envoyé par le client pour écrire sur
   disque.
-- ❌ Rediriger un visiteur non connecté hors des pages publiques : on lui montre
-  la page, et on lui propose de s'identifier pour agir.
+- ❌ Rediriger un visiteur non connecté hors des pages publiques, ou lui
+  annoncer d'entrée que l'action est réservée : on lui montre la page, on le
+  laisse aller jusqu'au geste, et **c'est là** qu'on lui propose de s'identifier.
+- ❌ Croire un jeton Google sans en vérifier la signature côté serveur.
+- ❌ Laisser transparaître qu'un compte a été ouvert avec Google : la connexion
+  par mot de passe renvoie le même message que pour un email inconnu.

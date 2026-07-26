@@ -79,7 +79,9 @@ def composer_legende(client: Client, document: DocumentClient) -> str:
         "Nouvelle demande de devis — Cavally Livres",
         "",
         f"Client : {client.nom_complet}",
-        f"Contact : {client.contact}",
+        # Le depot exige un numero ; la garde ne sert qu'a ne jamais afficher
+        # « Contact : None » a l'equipe si le cas se presentait.
+        f"Contact : {client.contact or 'non renseigné'}",
     ]
     if client.etablissement:
         lignes.append(f"Établissement : {client.etablissement}")

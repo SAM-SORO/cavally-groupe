@@ -1,16 +1,19 @@
-import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useCallback, useState } from 'react'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { Spinner } from '../components/Icons.jsx'
 import { useAuth } from './AuthContext.jsx'
 import Champ from './Champ.jsx'
+import ConnexionGoogle from './ConnexionGoogle.jsx'
 import { CoquilleAuth } from './Coquille.jsx'
+import { avecRetour, destinationRetour } from './navigation.js'
 
 const LONGUEUR_MIN_MOT_DE_PASSE = 8
 
 export default function PageInscription() {
   const { client, inscrire } = useAuth()
   const naviguer = useNavigate()
+  const [parametres] = useSearchParams()
 
   const [champs, setChamps] = useState({
     nom_complet: '',
@@ -22,7 +25,10 @@ export default function PageInscription() {
   const [erreur, setErreur] = useState(null)
   const [envoi, setEnvoi] = useState(false)
 
-  if (client) return <Navigate to="/depot" replace />
+  const retour = destinationRetour(parametres)
+  const apresConnexion = useCallback(() => naviguer(retour, { replace: true }), [naviguer, retour])
+
+  if (client) return <Navigate to={retour} replace />
 
   const majChamp = (cle) => (valeur) => setChamps((etat) => ({ ...etat, [cle]: valeur }))
 
@@ -45,7 +51,7 @@ export default function PageInscription() {
         etablissement: champs.etablissement.trim() || null,
         mot_de_passe: champs.mot_de_passe,
       })
-      naviguer('/depot', { replace: true })
+      naviguer(retour, { replace: true })
     } catch (exception) {
       setErreur(exception.message)
       setEnvoi(false)
@@ -121,10 +127,12 @@ export default function PageInscription() {
             )}
           </button>
         </form>
+
+        <ConnexionGoogle onConnecte={apresConnexion} />
       </section>
 
       <p className="cli-bascule">
-        Déjà inscrit ? <Link to="/connexion">Se connecter</Link>
+        Déjà inscrit ? <Link to={avecRetour('/connexion', retour)}>Se connecter</Link>
       </p>
     </CoquilleAuth>
   )
