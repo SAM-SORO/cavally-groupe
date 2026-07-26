@@ -1,0 +1,128 @@
+import { useState } from 'react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+
+import { Spinner } from '../components/Icons.jsx'
+import { useAuth } from './AuthContext.jsx'
+import Champ from './Champ.jsx'
+import { CoquilleAuth } from './Coquille.jsx'
+
+const LONGUEUR_MIN_MOT_DE_PASSE = 8
+
+export default function PageInscription() {
+  const { client, inscrire } = useAuth()
+  const naviguer = useNavigate()
+
+  const [champs, setChamps] = useState({
+    nom_complet: '',
+    contact: '',
+    email: '',
+    etablissement: '',
+    mot_de_passe: '',
+  })
+  const [erreur, setErreur] = useState(null)
+  const [envoi, setEnvoi] = useState(false)
+
+  if (client) return <Navigate to="/depot" replace />
+
+  const majChamp = (cle) => (valeur) => setChamps((etat) => ({ ...etat, [cle]: valeur }))
+
+  const soumettre = async (evenement) => {
+    evenement.preventDefault()
+    setErreur(null)
+
+    if (champs.mot_de_passe.length < LONGUEUR_MIN_MOT_DE_PASSE) {
+      setErreur(`Le mot de passe doit contenir au moins ${LONGUEUR_MIN_MOT_DE_PASSE} caractères.`)
+      return
+    }
+
+    setEnvoi(true)
+    try {
+      await inscrire({
+        nom_complet: champs.nom_complet.trim(),
+        contact: champs.contact.trim(),
+        email: champs.email.trim(),
+        // Champ facultatif : on n'envoie rien plutôt qu'une chaîne vide.
+        etablissement: champs.etablissement.trim() || null,
+        mot_de_passe: champs.mot_de_passe,
+      })
+      naviguer('/depot', { replace: true })
+    } catch (exception) {
+      setErreur(exception.message)
+      setEnvoi(false)
+    }
+  }
+
+  return (
+    <CoquilleAuth>
+      <section className="cli-carte">
+        <h1 className="cli-carte__titre">Créer un compte</h1>
+        <p className="cli-carte__chapo">Quelques informations, et vous pouvez déposer vos listes.</p>
+
+        <form className="cli-formulaire" onSubmit={soumettre} noValidate>
+          <Champ
+            libelle="Nom complet"
+            valeur={champs.nom_complet}
+            onChange={majChamp('nom_complet')}
+            autoComplete="name"
+            placeholder="Koffi Aya"
+          />
+          <Champ
+            libelle="Téléphone"
+            type="tel"
+            valeur={champs.contact}
+            onChange={majChamp('contact')}
+            autoComplete="tel"
+            inputMode="tel"
+            placeholder="+225 07 97 99 19 99"
+          />
+          <Champ
+            libelle="Adresse email"
+            type="email"
+            valeur={champs.email}
+            onChange={majChamp('email')}
+            autoComplete="email"
+            placeholder="vous@exemple.com"
+          />
+          <Champ
+            libelle="Établissement"
+            valeur={champs.etablissement}
+            onChange={majChamp('etablissement')}
+            autoComplete="organization"
+            placeholder="Groupe scolaire…"
+            facultatif
+            aide="À laisser vide si vous êtes un particulier."
+          />
+          <Champ
+            libelle="Mot de passe"
+            type="password"
+            valeur={champs.mot_de_passe}
+            onChange={majChamp('mot_de_passe')}
+            autoComplete="new-password"
+            aide={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum.`}
+          />
+
+          {erreur && (
+            <p className="cli-alerte" role="alert">
+              {erreur}
+            </p>
+          )}
+
+          <button type="submit" className="bouton bouton--primaire cli-bouton-bloc" disabled={envoi}>
+            {envoi ? (
+              <>
+                <Spinner className="tourne" />
+                Création…
+              </>
+            ) : (
+              'Créer mon compte'
+            )}
+          </button>
+        </form>
+      </section>
+
+      <p className="cli-bascule">
+        Déjà inscrit ? <Link to="/connexion">Se connecter</Link>
+      </p>
+    </CoquilleAuth>
+  )
+}

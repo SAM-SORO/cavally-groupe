@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Thème Cavally Livres
+   Source unique : « code couleur.txt ».
+     Jaune  #FFB800   Noir  #000000   Blanc  #FFFFFF
+   Tout le reste est dérivé de ces trois valeurs :
+     - les gris    = noir posé en aplat transparent sur blanc ;
+     - les voiles  = jaune posé en aplat transparent sur blanc ;
+     - --brand-press = jaune de la charte à 90 % de luminosité.
+   Aucune couleur hors charte n'est introduite.
+   ========================================================================== */
+
+:root {
+  /* — Charte — */
+  --brand: #ffb800;
+  --black: #000000;
+  --white: #ffffff;
+
+  /* — Jaune dérivé — */
+  --brand-press: #e5a600; /* jaune × 0.90, pour l'état enfoncé */
+  --brand-veil: #fff4d9; /* jaune à 15 % sur blanc */
+  --brand-wash: #fffaee; /* jaune à 6 % sur blanc */
+  --brand-a20: rgba(255, 184, 0, 0.2);
+  --brand-a35: rgba(255, 184, 0, 0.35);
+
+  /* — Neutres : noir sur blanc — */
+  --ink: #000000; /* titres */
+  --ink-80: #333333; /* corps de texte */
+  --ink-60: #666666; /* texte secondaire */
+  --ink-45: #8c8c8c; /* légendes, méta */
+  --line: #e6e6e6; /* filets */
+  --line-soft: #f0f0f0;
+  --canvas: #fafafa; /* fond de page */
+  --surface: #ffffff; /* cartes */
+  --surface-sunken: #f7f7f7;
+
+  /* — Ombres : noir très dilué, jamais de teinte — */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px -4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 28px -16px rgba(0, 0, 0, 0.18);
+  --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.04), 0 24px 48px -24px rgba(0, 0, 0, 0.22);
+  --shadow-brand: 0 2px 4px rgba(0, 0, 0, 0.06), 0 14px 28px -14px rgba(255, 184, 0, 0.55);
+
+  /* — Typographie — */
+  --font-display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --font-ui: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* — Rythme (base 4) — */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 2.5rem;
+  --sp-8: 3rem;
+  --sp-9: 4rem;
+  --sp-10: 5rem;
+
+  /* — Rayons — */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* — Mouvement — */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 140ms;
+  --t-base: 220ms;
+  --t-slow: 420ms;
+}
+
+/* — Reset ciblé — */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--ink-80);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.6;
+  font-feature-settings: 'cv05' 1, 'ss01' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+ul,
+ol {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--black);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--brand-a35);
+  color: var(--black);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

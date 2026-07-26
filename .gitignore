@@ -1,0 +1,43 @@
+# ===========================================================================
+# Secrets — ne JAMAIS committer
+# ===========================================================================
+# Contient la clé Gemini, le mot de passe PostgreSQL, le secret JWT
+# et (bientôt) les identifiants WhatsApp.
+.env
+.env.*
+*.env
+!.env.example
+!.env.sample
+
+# ===========================================================================
+# Python
+# ===========================================================================
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===========================================================================
+# Node
+# ===========================================================================
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===========================================================================
+# Sorties locales et fichiers d'éditeur
+# ===========================================================================
+*.local
+tmp/
+out/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

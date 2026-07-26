@@ -1,0 +1,23 @@
+Jaune (utilisé pour l'icône du livre et le mot "Cavally")
+
+Hex : #FFB800
+
+RVB : (255, 184, 0)
+
+CMJN (approximatif pour impression) : (0%, 28%, 100%, 0%)
+
+Noir (utilisé pour le mot "Livres")
+
+Hex : #000000
+
+RVB : (0, 0, 0)
+
+CMJN (approximatif pour impression) : (0%, 0%, 0%, 100%)
+
+Blanc (utilisé pour l'icône de l'icône à l'intérieur du carré jaune et le fond)
+
+Hex : #FFFFFF
+
+RVB : (255, 255, 255)
+
+CMJN (approximatif pour impression) : (0%, 0%, 0%, 0%)

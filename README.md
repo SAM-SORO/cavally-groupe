@@ -1,0 +1,350 @@
+# Cavally Livres — Plateforme de devis
+
+Deux espaces, **volontairement indépendants**.
+
+| Espace | URL | Qui | Ce qu'il fait |
+|---|---|---|---|
+| **Espace clients** | `/`, `/inscription`, `/connexion`, `/depot` | clients externes | inscription, connexion, dépôt d'un document **relayé sur WhatsApp** |
+| **Outil interne** | `/interne` | l'équipe | document → Gemini Flash → devis Excel |
+
+⚠️ **Ils ne communiquent pas.** Le dépôt d'un client ne déclenche ni extraction Gemini ni
+génération Excel : le document part tel quel sur WhatsApp, et c'est l'équipe qui le repasse
+ensuite, de son côté, dans l'outil interne.
+
+## Outil interne
+
+Analyse une **liste de fournitures scolaires** (Word, PDF, capture ou photo) avec **Gemini
+Flash**, et renvoie un **devis Excel structuré** dont la colonne *Prix Unitaire* est laissée
+vide et les colonnes *Total* sont de vraies formules.
+
+L'outil ne fait que ça : **uploader un document, télécharger le `.xlsx`**. Aucun tableau
+éditable, aucune saisie de prix dans l'interface — les prix sont renseignés à la main dans le
+fichier téléchargé.
+
+---
+
+## Démarrage
+
+Deux terminaux.
+
+### 1. Backend (FastAPI)
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Windows  (source .venv/bin/activate sous Unix)
+pip install -r requirements.txt
+copy .env.example .env          # puis renseigner GEMINI_API_KEY
+uvicorn app.main:app --reload --port 8000
+```
+
+> ⚠️ Utiliser un **CPython officiel** (python.org / Microsoft Store). Un Python MSYS2/MinGW ne
+> trouve pas les roues Windows de `pymupdf` et `pillow`.
+
+### 2. Frontend (React + Vite)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Interface sur <http://localhost:5173>. Vite proxifie `/api` vers `http://127.0.0.1:8000`, donc
+aucune configuration CORS n'est nécessaire en développement.
+
+### Variables d'environnement (`backend/.env`)
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `GEMINI_API_KEY` | — | Clé Google AI Studio. **Jamais committée** (`.gitignore`). |
+| `GEMINI_MODEL` | `gemini-flash-latest` | Modèle Flash utilisé pour l'extraction. |
+| `MAX_UPLOAD_MB` | `18` | Taille maximale d'un document. |
+| `CORS_ORIGINS` | `http://localhost:5173,…` | Origines autorisées (utile hors dev). |
+
+---
+
+## Flux
+
+```
+React (upload seul) ──► POST /api/process ──► Gemini Flash (JSON strict)
+                                │
+                                ▼
+                 { etablissement, classe, articles[…] }
+                                │
+                                ▼
+              openpyxl ──► .xlsx (Prix Unitaire VIDE + formules) ──► téléchargement
+```
+
+Un seul appel réseau. Le `.xlsx` revient directement dans le corps de la réponse ; le
+récapitulatif d'analyse (nombre d'articles, établissement, tokens, durée) voyage dans l'en-tête
+`X-Devis-Meta`, encodé en JSON base64 pour rester ASCII.
+
+### Endpoints
+
+| Méthode | Route | Réponse |
+|---|---|---|
+| `POST` | `/api/process` | Le `.xlsx` (`Content-Disposition: attachment`) + `X-Devis-Meta` |
+| `GET` | `/api/health` | État du service, modèle actif, formats acceptés |
+| `GET` | `/api/health?probe=1` | Idem + **appel réel au modèle** et erreur exacte s'il refuse |
+
+La sonde coûte quelques tokens mais c'est le moyen le plus rapide de distinguer un modèle
+retiré (404), un quota épuisé (429) et une clé refusée (401/403) :
+
+```bash
+curl "http://127.0.0.1:8000/api/health?probe=1"
+```
+
+Formats acceptés : `.pdf`, `.docx`, `.png`, `.jpg/.jpeg`, `.webp`, `.heic/.heif`, `.txt`, `.md`.
+
+**Un seul chemin d'extraction** : pas de parseur par format. Le PDF et les images partent en
+`inline_data` vers Gemini ; le `.docx` est simplement normalisé en texte (paragraphes + tableaux)
+— et si le document ne contient que des images collées, ce sont ces images qui sont envoyées.
+
+---
+
+## Format du fichier généré
+
+`un_exemple.xlsx` fait référence pour la **mise en forme** — c'est l'identité du devis Cavally
+Livres. Le **contenu**, lui, vient intégralement du document analysé :
+
+- **Les rubriques sont celles du document.** Aucune nomenclature imposée : si la liste parle de
+  « TENUE DE SPORT », « HYGIÈNE » ou « INFORMATIQUE », c'est ce qui apparaît dans la colonne
+  *Catégorie*. Une nomenclature courte n'est déduite que si le document n'a aucune rubrique.
+- **Un onglet par classe.** Un fascicule couvrant plusieurs niveaux produit un onglet nommé par
+  classe, chacun avec son propre tableau et son propre total. Une seule classe → un seul onglet.
+- **Les consignes sont celles du document**, ou rien. Aucune consigne par défaut.
+- **Une information absente reste une case à compléter** (`_______`), jamais une valeur inventée :
+  c'est vrai de l'établissement, de la classe et de l'année scolaire comme des prix unitaires.
+
+Structure de chaque onglet :
+
+```
+A1  Établissement                              E1  DEVIS ESTIMATIF
+A2  Coordonnées                                E3  Année Scolaire : | F3
+A5  Nom de l'élève : | B5  ______              E4  Classe :         | F4
+A6  Parent / Tuteur : | B6 ______              E5  Date :           | F5
+
+L9   Catégorie │ Désignation │ Qté │ Prix Unitaire (FCFA) │ Total HT (FCFA)
+L10+ …données…       (colonne D vide)            =C{n}*D{n}
+L…+2 TOTAL ESTIMATIF HT :                        =SUM(E10:E{dernier})
+L…+3 CONSIGNES & REMARQUES : …      (seulement si le document en contient)
+```
+
+Règles tenues :
+
+- **Vraies formules** — `Total HT` et `TOTAL ESTIMATIF HT` sont des formules Excel, jamais des
+  valeurs figées : tout se recalcule dès qu'un prix est saisi.
+- **Prix Unitaire vide** — la cellule porte le format monétaire et les bordures, mais aucune valeur.
+- **Format FCFA** — `#,##0 "FCFA"`, comme dans le fichier d'exemple.
+- **Couleurs de la charte** — bandeau d'en-tête `#FFB800`, texte noir (contraste conforme), ligne
+  de total voilée de jaune, filets gris neutres.
+- Volets figés sous les en-têtes, ligne de titre répétée à l'impression, paysage ajusté en largeur.
+
+---
+
+## Charte graphique
+
+Source unique : `code couleur.txt`.
+
+| | Hex | Usage |
+|---|---|---|
+| Jaune | `#FFB800` | accent, bandeau Excel, bouton principal, jauge d'analyse |
+| Noir | `#000000` | texte, boutons secondaires, pastille d'étape active |
+| Blanc | `#FFFFFF` | surfaces |
+
+Toutes les autres valeurs sont **dérivées** de ces trois-là et centralisées dans
+`frontend/src/styles/theme.css` : les gris sont du noir posé en aplat transparent sur blanc, les
+voiles sont du jaune posé en aplat transparent sur blanc, `--brand-press` est le jaune à 90 % de
+luminosité. Aucune couleur hors charte n'est introduite.
+
+Le logo est recadré sur son contenu utile (`frontend/src/assets/logo-cavally-livres.png`) et intégré
+dans le header. Le favicon reprend la marque du logo.
+
+---
+
+## Structure
+
+```
+backend/
+  app/
+    config.py         lecture du .env (Gemini, base, auth, WhatsApp)
+    main.py           API FastAPI : monte les deux espaces
+
+    # — Outil interne —
+    schemas.py        modèles Pydantic + nettoyage défensif des libellés/quantités
+    extraction.py     prompt, schéma de réponse, appel Gemini, parsing défensif
+    excel.py          génération openpyxl (structure de un_exemple.xlsx)
+
+    # — Espace clients —
+    db.py             moteur SQLAlchemy, création de la table au démarrage
+    models.py         table clients (la seule)
+    schemas_client.py validation inscription / connexion
+    securite.py       bcrypt, JWT, cookie HttpOnly, dépendance client_courant
+    routes_client.py  /api/auth/* et /api/demandes
+    whatsapp.py       relais isolé : RelaisSimule | RelaisCloudAPI
+frontend/
+  src/
+    main.jsx          routage : espace clients sur /, outil interne sur /interne
+    App.jsx           outil interne (machine à états)
+    api.js            client HTTP de l'outil interne
+    components/       Header, Stepper, Dropzone, Analysis, Result, Failure, Aside, Icons
+    client/           AuthContext, Coquille, Champ, PageInscription,
+                      PageConnexion, PageDepot, RouteProtegee, api.js
+    styles/           theme.css (charte) + app.css (interne) + client.css (clients)
+```
+
+---
+
+## Espace clients externes
+
+### Parcours
+
+```
+Inscription ──► compte créé dans PostgreSQL (table clients)
+     ▼
+Connexion   ──► cookie de session HttpOnly
+     ▼
+Dépôt d'un document (Word / PDF / image)
+     ├──► confirmation affichée : « Demande bien reçue »
+     └──► DOCUMENT TEL QUEL relayé sur WhatsApp à l'entreprise,
+          avec nom + contact (+ établissement si renseigné)
+```
+
+### Persistance — règle stricte
+
+**Seuls les clients sont stockés.** Il n'existe aucune table de demandes, de commandes ou
+d'historique d'uploads : le document est relayé sur WhatsApp puis écarté de la mémoire. Rien
+n'est écrit sur disque.
+
+Table `clients` : `id, nom_complet, contact, email (unique), etablissement (nullable),
+mot_de_passe_hash, cree_le`. Créée au démarrage. **Si la base est injoignable, l'outil interne
+reste utilisable** — il n'en dépend pas — et l'espace clients répond `503` avec un message clair.
+
+### Authentification
+
+- Mot de passe **jamais en clair** : bcrypt (coût 12) sur un pré-hachage SHA-256/base64. Ce
+  pré-hachage évite la troncature silencieuse de bcrypt à 72 octets.
+- Session par **JWT dans un cookie `HttpOnly` + `SameSite=Lax`** : illisible depuis le
+  JavaScript de la page (donc hors de portée d'un XSS) et non envoyé sur une requête
+  inter-site. Passer `COOKIE_SECURISE=true` dès que le site est servi en HTTPS.
+- `JWT_SECRET` doit être défini en production. Sans lui, un secret éphémère est généré :
+  l'application tourne, mais les sessions tombent à chaque redémarrage.
+- Une connexion refusée renvoie **le même message** que l'email existe ou non.
+
+### Relais WhatsApp
+
+Isolé dans `backend/app/whatsapp.py` derrière l'interface `RelaisWhatsApp`. Le reste du code ne
+connaît que `obtenir_relais()` et `envoyer_demande()`.
+
+| Variable | Rôle |
+|---|---|
+| `WHATSAPP_TOKEN` | jeton d'accès de l'application Meta |
+| `WHATSAPP_PHONE_NUMBER_ID` | numéro expéditeur (WhatsApp Business) |
+| `WHATSAPP_DESTINATAIRE` | numéro de l'entreprise, format international sans `+` |
+| `WHATSAPP_API_VERSION`, `WHATSAPP_API_URL` | endpoint Graph |
+
+Trois états :
+
+1. **Non configuré** (aucun identifiant) → `RelaisSimule` : l'envoi est journalisé en `WARNING`
+   avec le contenu exact du message, et le flux client aboutit normalement. Rien n'échoue.
+2. **Configuré** → `RelaisCloudAPI` : téléversement du média puis envoi d'un message `document`
+   dont la légende porte nom / contact / établissement / email. **Aucune autre ligne de code à
+   modifier.**
+3. **Configuré mais en échec** → `502` et message d'erreur au client. On ne lui confirme jamais
+   une transmission qui n'a pas eu lieu.
+
+> ⚠️ Contrainte Meta à valider à la mise en service : hors fenêtre de service de 24 h, les
+> messages libres sont refusés et un *template* approuvé est requis.
+
+### Endpoints
+
+| Méthode | Route | Protégée | Rôle |
+|---|---|---|---|
+| `POST` | `/api/auth/inscription` | non | crée le client, ouvre la session |
+| `POST` | `/api/auth/connexion` | non | ouvre la session |
+| `POST` | `/api/auth/deconnexion` | non | efface le cookie |
+| `GET` | `/api/auth/moi` | oui | session courante |
+| `POST` | `/api/demandes` | oui | relaie le document, **ne stocke rien** |
+
+### Base de données
+
+PostgreSQL 17 local, base `cavally`. À créer une fois :
+
+```bash
+psql -U postgres -c "CREATE DATABASE cavally;"
+```
+
+Puis renseigner `DATABASE_URL` dans `backend/.env` :
+
+```
+DATABASE_URL=postgresql+psycopg://postgres:MOT_DE_PASSE@localhost:5432/cavally
+```
+
+## Quotas Gemini — à connaître
+
+Le palier gratuit de l'API Gemini est limité à **20 requêtes par jour, par projet et par
+modèle** (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`). Une fois atteint, chaque
+analyse échoue en `429 RESOURCE_EXHAUSTED`.
+
+Deux pièges :
+
+- **Les alias `-latest` ne sont pas des modèles à part.** `gemini-flash-latest` et
+  `gemini-3.6-flash` désignent le même modèle et **partagent le même compteur** : passer de
+  l'un à l'autre ne redonne aucun quota.
+- **Chaque modèle a son propre compteur.** Basculer sur `gemini-3.5-flash` ou
+  `gemini-flash-lite-latest` redonne 20 requêtes — mais ce n'est qu'un répit.
+
+La solution durable est d'**activer la facturation** sur le projet Google AI Studio. Pour
+vérifier l'état du quota à un instant donné :
+
+```bash
+curl "http://127.0.0.1:8000/api/health?probe=1"
+```
+
+## Coûts & journalisation
+
+Le raisonnement du modèle est **bridé** (`thinking_level: low`, ou `thinking_budget: 0` sur les
+modèles 2.5) : la tâche est simple et cadrée, cela réduit la facture sans perte de qualité. La
+configuration acceptée par le modèle est négociée au premier appel puis mémorisée.
+
+Chaque appel journalise les tokens consommés :
+
+```
+Gemini gemini-3.6-flash — 3.95s | tokens prompt=1057 reponse=560 raisonnement=0 total=1617
+```
+
+---
+
+## Écarts assumés par rapport à `CLAUDE.md`
+
+1. **Modèle par défaut** — `gemini-2.5-flash` renvoie `404 : no longer available to new users`
+   pour cette clé. Le défaut est donc `gemini-flash-latest` : cet alias suit le Flash courant,
+   donc il ne retombera pas en 404 le jour où la version datée sera retirée. Conforme à la
+   consigne « vérifier le modèle Flash actif ».
+2. **Schéma d'extraction élargi** — le prompt demande aussi `categorie`, `etablissement`,
+   `annee_scolaire`, `consignes` et un découpage `listes[]` par classe, parce que
+   `un_exemple.xlsx` comporte ces blocs et qu'un même document peut couvrir plusieurs niveaux.
+   Les règles de fond sont inchangées : un article = une ligne, quantité par défaut à 1, ordre du
+   document préservé, rien d'inventé (chaîne vide si l'information est absente).
+3. **Colonnes** — l'exemple place la Désignation en **B** et le Montant en **E** (`=C*D`), là où la
+   table de `CLAUDE.md` décrivait un tableau A→D. La structure de l'exemple a été suivie.
+4. **Pas de logo dans l'Excel** — `CLAUDE.md` le conditionne à « si l'exemple le fait » ; le fichier
+   de référence n'en contient pas. Une mention texte « Devis établi par Cavally Livres » ferme le
+   document.
+
+---
+
+## Vérifications effectuées
+
+- Extraction réelle testée sur les trois formats (`.docx`, `.pdf`, `.png`) : 18/18 articles,
+  quantités et catégories correctes, métadonnées d'en-tête relevées.
+- Testé sur un document volontairement éloigné de l'exemple (deux classes dans le même fichier,
+  rubriques « TENUE DE SPORT / HYGIÈNE / ARTS PLASTIQUES / GÉOMÉTRIE / INFORMATIQUE », aucune
+  consigne, pas d'année scolaire, mise en page en tableau) : 2 onglets nommés par classe, les
+  8 rubriques du document restituées telles quelles, année scolaire laissée à compléter, aucun
+  bloc consignes fabriqué.
+- `POST /api/process` : `200` + `.xlsx` valide en ~4 s ; `415` sur format non supporté ; `422`
+  quand le document n'est pas une liste de fournitures.
+- Classeur relu avec openpyxl : 18 formules `=C{n}*D{n}`, total `=SUM(E10:E27)`, 18 cellules de prix
+  effectivement vides, format `#,##0 "FCFA"`, en-tête `FFFFB800` en gras noir.
+- Interface parcourue dans Chrome sur les cinq états (repos, document retenu, analyse, succès, échec).
