@@ -1,8 +1,8 @@
 """Acces PostgreSQL — base « cavally ».
 
-Une seule table y vit : les clients de l'espace externe. Les demandes de devis
-ne sont volontairement PAS persistees : le document est relaye vers WhatsApp
-puis ecarte.
+Trois tables y vivent : `clients`, `admins` et `repetiteur`. Les demandes de
+devis ne sont volontairement PAS persistees : le document est relaye vers
+WhatsApp puis ecarte.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ def get_db() -> Iterator[Session]:
 
 
 def initialiser_base() -> bool:
-    """Cree la table des clients si elle n'existe pas. Renvoie True si la base repond.
+    """Cree les tables manquantes. Renvoie True si la base repond.
 
     L'echec n'interrompt pas le demarrage : l'outil interne (extraction Gemini
     et generation Excel) ne depend pas de la base et doit rester utilisable.
@@ -60,7 +60,7 @@ def initialiser_base() -> bool:
         )
         return False
 
-    logger.info("Base « cavally » prete (table clients)")
+    logger.info("Base « cavally » prete (clients, admins, repetiteur)")
     return True
 
 

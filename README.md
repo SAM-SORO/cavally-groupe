@@ -181,7 +181,7 @@ backend/
 
     # — Base et sécurité (communs) —
     db.py             moteur SQLAlchemy, création des tables au démarrage
-    models.py         tables clients et admins (les deux seules)
+    models.py         tables clients, admins et repetiteur (les trois seules)
     securite.py       bcrypt, JWT, cookies HttpOnly, rôles client/admin
 
     # — Espace clients —
@@ -189,20 +189,35 @@ backend/
     routes_client.py  /api/auth/* et /api/demandes
     whatsapp.py       relais isolé : RelaisSimule | RelaisCloudAPI
 
+    # — Répétiteurs —
+    routes_repetiteurs.py  /api/repetiteurs (liste publique, dépôt fermé)
+    stockage.py            écriture des CV sur disque, noms tirés au sort
+
     # — Administration —
     routes_admin.py   /api/admin/* (connexion, déconnexion, session)
     creer_admin.py    CLI de création d'un admin (aucune inscription web)
+  stockage/cv/        CV déposés — hors dépôt git
 frontend/
+  public/videos/      vidéos de témoignage auto-hébergées (facultatif)
   src/
-    main.jsx          routage : clients sur /, outil interne sur /interne
+    main.jsx          routage : public sur /, outil interne sur /interne
     App.jsx           outil interne (machine à états)
     api.js            client HTTP de l'outil interne
     components/       Header, Stepper, Dropzone, Analysis, Result, Failure, Aside, Icons
-    client/           AuthContext, Coquille, Champ, PageInscription,
-                      PageConnexion, PageDepot, RouteProtegee, api.js
+    client/           AuthContext, Coquille (navbar), Champ, AppelConnexion,
+                      PageInscription, PageConnexion, PageDepot,
+                      PageTemoignages + temoignages.js,
+                      PageRepetiteurs + ModalRepetiteur, api.js
     admin/            AdminContext, PageConnexionAdmin, RouteAdmin, api.js
     styles/           theme.css (charte) + app.css (interne) + client.css (clients)
 ```
+
+### Navigation publique
+
+Trois menus — **Accueil** (`/`, dépôt d'une liste), **Témoignage**
+(`/temoignages`), **Répétiteur** (`/repetiteurs`). Même règle partout : la page
+est consultable sans compte, l'**action** demande une session. Un visiteur voit
+donc la page et l'invitation à s'identifier, plutôt qu'une redirection.
 
 ---
 
@@ -223,13 +238,16 @@ Dépôt d'un document (Word / PDF / image)
 
 ### Persistance — règle stricte
 
-**Seuls les clients sont stockés.** Il n'existe aucune table de demandes, de commandes ou
-d'historique d'uploads : le document est relayé sur WhatsApp puis écarté de la mémoire. Rien
-n'est écrit sur disque.
+**Les dépôts de listes ne sont pas stockés.** Il n'existe aucune table de demandes, de commandes
+ou d'historique d'uploads : le document est relayé sur WhatsApp puis écarté de la mémoire, et
+rien n'est écrit sur disque.
 
 Table `clients` : `id, nom_complet, contact, email (unique), etablissement (nullable),
 mot_de_passe_hash, cree_le`. Créée au démarrage. **Si la base est injoignable, l'outil interne
 reste utilisable** — il n'en dépend pas — et l'espace clients répond `503` avec un message clair.
+
+> Le CV d'un répétiteur, lui, **est** conservé (fichier + entrée en base) : c'est un profil que
+> la personne veut voir publié, pas une demande ponctuelle. Voir « Répétiteurs » plus bas.
 
 ### Authentification
 
@@ -277,7 +295,52 @@ Trois états :
 | `GET` | `/api/auth/moi` | oui | session courante |
 | `POST` | `/api/demandes` | oui | relaie le document, **ne stocke rien** |
 
-### Base de données
+---
+
+## Répétiteurs
+
+Page `/repetiteurs` : les CV des encadreurs, consultables par tous. Le bouton
+« S'enregistrer en tant que répétiteur » ouvre un modal (nom + CV) — réservé aux clients
+connectés ; un visiteur y voit l'invitation à s'identifier.
+
+### Relation
+
+Un client **peut** être répétiteur, ou non. La table `repetiteur` porte une clé étrangère
+`client_id` **unique** vers `clients`, avec `ON DELETE CASCADE` : un client, au plus un profil.
+Se réenregistrer **remplace** le profil au lieu d'en créer un second, et l'ancien CV est effacé
+du disque — après que le remplacement soit acté en base, jamais avant.
+
+### Stockage du CV
+
+Dossier réglé par `STOCKAGE_CV` (défaut `backend/stockage/cv`, ignoré par git). C'est le seul
+stockage de fichiers de la plateforme. Le nom sur disque est **tiré au sort**
+(`secrets.token_hex`) et seule l'extension validée est reprise : le nom envoyé par le client
+n'atteint jamais le système de fichiers. La relecture est bornée au dossier de stockage.
+
+Formats acceptés : `.pdf`, `.docx`, `.doc`.
+
+### Endpoints
+
+| Méthode | Route | Protégée | Rôle |
+|---|---|---|---|
+| `GET` | `/api/repetiteurs` | non | liste publique des profils |
+| `GET` | `/api/repetiteurs/{id}/cv` | non | sert le CV (`inline`) |
+| `GET` | `/api/repetiteurs/moi` | client | profil du connecté, ou `null` |
+| `POST` | `/api/repetiteurs` | client | crée ou remplace son profil |
+
+---
+
+## Témoignages
+
+Page `/temoignages` : une grille de vidéos. **Aucune table** — la source est le fichier
+`frontend/src/client/temoignages.js`. Chaque entrée accepte soit un fichier déposé dans
+`frontend/public/videos/`, soit une URL d'intégration YouTube ou Vimeo. Tant que `video` est
+vide, la carte affiche « Vidéo à venir » : la grille reste lisible avant même qu'il y ait des
+vidéos.
+
+---
+
+## Base de données
 
 PostgreSQL 17 local, base `cavally`. À créer une fois :
 
@@ -290,6 +353,11 @@ Puis renseigner `DATABASE_URL` dans `backend/.env` :
 ```
 DATABASE_URL=postgresql+psycopg://postgres:MOT_DE_PASSE@localhost:5432/cavally
 ```
+
+Trois tables, créées au démarrage : `clients`, `admins`, `repetiteur`. Pas de quatrième —
+ni demandes, ni commandes, ni historique d'uploads.
+
+---
 
 ## Administrateurs
 

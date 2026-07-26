@@ -14,6 +14,13 @@ load_dotenv(BACKEND_DIR / ".env")
 
 DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 DEFAULT_DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/cavally"
+DEFAULT_STOCKAGE_CV = "stockage/cv"
+
+
+def _resoudre(chemin: str) -> Path:
+    """Chemin absolu tel quel ; chemin relatif ancre sur `backend/`."""
+    brut = Path(chemin)
+    return brut if brut.is_absolute() else BACKEND_DIR / brut
 
 
 @dataclass(frozen=True)
@@ -37,6 +44,9 @@ class Settings:
     gemini_model: str
     max_upload_bytes: int
     database_url: str
+    # Dossier ou vivent les CV des repetiteurs — le seul stockage de fichiers
+    # de la plateforme.
+    stockage_cv: Path
     jwt_secret: str
     jwt_algorithme: str
     session_duree_heures: int
@@ -62,6 +72,9 @@ def get_settings() -> Settings:
         max_upload_bytes=max_mb * 1024 * 1024,
         # — Espace clients —
         database_url=os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).strip() or DEFAULT_DATABASE_URL,
+        # Chemin relatif ? On l'ancre sur backend/, pour que le dossier ne
+        # change pas selon le repertoire d'ou uvicorn est lance.
+        stockage_cv=_resoudre(os.getenv("STOCKAGE_CV", "").strip() or DEFAULT_STOCKAGE_CV),
         jwt_secret=os.getenv("JWT_SECRET", "").strip(),
         jwt_algorithme=os.getenv("JWT_ALGORITHME", "HS256").strip() or "HS256",
         session_duree_heures=int(os.getenv("SESSION_DUREE_HEURES", "12") or 12),

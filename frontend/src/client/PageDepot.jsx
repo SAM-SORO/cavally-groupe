@@ -10,8 +10,9 @@ import {
   formatSupporte,
   formaterTaille,
 } from './api.js'
+import AppelConnexion from './AppelConnexion.jsx'
 import { useAuth } from './AuthContext.jsx'
-import { CoquilleClient } from './Coquille.jsx'
+import { CoquillePublique } from './Coquille.jsx'
 
 const LIBELLES_FORMAT = {
   '.pdf': 'PDF',
@@ -77,10 +78,25 @@ export default function PageDepot() {
     setStatut('repos')
   }
 
+  // — Visiteur sans compte : la page reste visible, seul le dépôt est fermé —
+  if (!client) {
+    return (
+      <CoquillePublique>
+        <section className="cli-panneau">
+          <h1 className="cli-panneau__titre">Déposer une liste de fournitures</h1>
+          <p className="cli-panneau__texte">
+            Word, PDF ou photo de la liste. Notre équipe s’occupe du reste.
+          </p>
+          <AppelConnexion texte="Le dépôt est réservé aux titulaires d’un compte." />
+        </section>
+      </CoquillePublique>
+    )
+  }
+
   // — Confirmation —
   if (statut === 'confirme') {
     return (
-      <CoquilleClient>
+      <CoquillePublique>
         <section className="cli-panneau cli-panneau--confirme" aria-live="polite">
           <CheckSeal className="cli-sceau" />
           <h1 className="cli-panneau__titre">Demande bien reçue</h1>
@@ -93,14 +109,14 @@ export default function PageDepot() {
             Déposer une autre liste
           </button>
         </section>
-      </CoquilleClient>
+      </CoquillePublique>
     )
   }
 
   const extension = fichier ? extensionDe(fichier.name) : ''
 
   return (
-    <CoquilleClient>
+    <CoquillePublique>
       <section className="cli-panneau">
         <h1 className="cli-panneau__titre">Déposer une liste de fournitures</h1>
         <p className="cli-panneau__texte">
@@ -197,6 +213,6 @@ export default function PageDepot() {
           }}
         />
       </section>
-    </CoquilleClient>
+    </CoquillePublique>
   )
 }

@@ -6,6 +6,8 @@
 2. **Espace clients externes** (`/api/auth/*`, `/api/demandes`) : inscription,
    connexion, et depot d'un document relaye a l'entreprise sur WhatsApp — sans
    conversion, sans extraction et sans enregistrement de la demande.
+3. **Repetiteurs** (`/api/repetiteurs`) : profils d'encadreurs rattaches a un
+   compte client. Consultation publique, enregistrement reserve aux connectes.
 
 Les deux ne communiquent pas : c'est l'entreprise qui reprend manuellement le
 document recu sur WhatsApp pour le passer dans l'outil interne.
@@ -34,7 +36,9 @@ from .extraction import SUPPORTED_EXTENSIONS, ExtractionError, extract_supplies,
 from .models import Admin
 from .routes_admin import router as routeur_admin
 from .routes_client import FORMATS_CLIENT, auth as routeur_auth, demandes as routeur_demandes
+from .routes_repetiteurs import router as routeur_repetiteurs
 from .securite import admin_courant, admin_optionnel
+from .stockage import FORMATS_CV
 from .whatsapp import obtenir_relais
 
 logging.basicConfig(
@@ -82,6 +86,7 @@ app.add_middleware(
 
 app.include_router(routeur_auth)
 app.include_router(routeur_demandes)
+app.include_router(routeur_repetiteurs)
 app.include_router(routeur_admin)
 
 
@@ -124,6 +129,7 @@ def health(probe: bool = False, admin: Admin | None = Depends(admin_optionnel)) 
         "base_disponible": base_disponible(),
         "whatsapp_configure": obtenir_relais().configure,
         "formats_client": list(FORMATS_CLIENT),
+        "formats_cv": list(FORMATS_CV),
     }
     if probe:
         if admin is None:

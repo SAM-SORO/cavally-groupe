@@ -32,6 +32,13 @@ yarn-error.log*
 pnpm-debug.log*
 
 # ===========================================================================
+# Données déposées — CV des répétiteurs
+# ===========================================================================
+# Fichiers réels envoyés par des personnes : ils vivent sur le serveur,
+# jamais dans le dépôt.
+backend/stockage/
+
+# ===========================================================================
 # Sorties locales et fichiers d'éditeur
 # ===========================================================================
 *.local

@@ -15,7 +15,10 @@ Le résultat doit être **propre, fiable et professionnel** : c'est un livrable 
 | Espace | Qui | Accès | Ce qu'il fait |
 |---|---|---|---|
 | **Outil interne** (`/interne`) | l'équipe Cavally | **admin authentifié obligatoire** | document → Gemini → devis Excel |
-| **Espace clients** (`/`, `/inscription`, `/connexion`, `/depot`) | les clients externes | compte client | inscription, connexion, dépôt d'un document **relayé sur WhatsApp** |
+| **Espace public** (`/`, `/temoignages`, `/repetiteurs`, `/inscription`, `/connexion`) | les clients externes | pages ouvertes, **actions** réservées aux inscrits | dépôt d'un document **relayé sur WhatsApp**, témoignages vidéo, CV des répétiteurs |
+
+L'espace public est organisé par une **navbar à trois menus** — Accueil,
+Témoignage, Répétiteur. Voir la section 14.
 
 ⚠️ **Les deux ne communiquent pas.** Le dépôt d'un client ne déclenche **ni extraction Gemini, ni génération Excel**. Le document part tel quel sur WhatsApp ; c'est ensuite l'équipe qui, de son côté, le repasse manuellement dans l'outil interne. Voir la section 12.
 
@@ -44,7 +47,7 @@ Le résultat doit être **propre, fiable et professionnel** : c'est un livrable 
 | IA | **Gemini Flash** (Google AI Studio) | Lecture multimodale → JSON structuré |
 | Génération Excel | **openpyxl** | Fichier `.xlsx` avec **vraies formules** |
 | Lecture docs | **PyMuPDF / python-docx** | Normalisation légère si besoin |
-| Base de données | **PostgreSQL 17** (base `cavally`) | **Uniquement `clients` et `admins`** |
+| Base de données | **PostgreSQL 17** (base `cavally`) | **Uniquement `clients`, `admins` et `repetiteur`** |
 | Auth | **bcrypt + JWT en cookie HttpOnly** | Sessions clients ET admins, cloisonnées |
 | Notification | **WhatsApp Cloud API** | Relais des demandes clients vers l'entreprise |
 
@@ -220,13 +223,17 @@ Dépôt d'un document (Word / PDF / image)
 
 ### 12.2 Persistance — règle stricte
 
-- **Deux tables, et deux seulement** :
+- **Trois tables, et trois seulement** :
   - `clients` : `id, nom_complet, contact, email (unique), etablissement (nullable), mot_de_passe_hash, cree_le` ;
-  - `admins` : voir section 13.
-- ❌ **Les demandes / uploads ne sont PAS enregistrés.** Aucune table de commandes,
-  de soumissions ou d'historique. Le document est relayé puis écarté de la mémoire.
+  - `admins` : voir section 13 ;
+  - `repetiteur` : voir section 14.2 — profil durable, lié aux clients.
+- ❌ **Les demandes / uploads de listes ne sont PAS enregistrés.** Aucune table de
+  commandes, de soumissions ou d'historique. Le document est relayé puis écarté
+  de la mémoire. Cette règle n'a pas bougé : le CV d'un répétiteur est une
+  **autre chose** — un profil que la personne veut voir publié, pas une demande
+  ponctuelle.
 - Base **PostgreSQL 17** nommée `cavally`, connexion via `DATABASE_URL`.
-  La table est créée au démarrage (`initialiser_base()`). Si la base est
+  Les tables sont créées au démarrage (`initialiser_base()`). Si la base est
   injoignable, l'outil interne reste utilisable — il n'en dépend pas.
 
 ### 12.3 Authentification
@@ -390,3 +397,86 @@ cloisonnement inverse — un admin n'entre pas dans l'espace clients.
 - ❌ Partager un même cookie ou un même jeton entre client et admin.
 - ❌ Modifier le pipeline Gemini/Excel pour ajouter l'autorisation : elle
   s'ajoute en dépendance de route, le métier reste intact.
+
+---
+
+## 14. NAVIGATION PUBLIQUE — Accueil / Témoignage / Répétiteur
+
+### 14.1 La navbar et le principe d'accès
+
+Trois menus, dans `client/Coquille.jsx` (`CoquillePublique`) :
+
+| Menu | Route | Contenu |
+|---|---|---|
+| **Accueil** | `/` | le dépôt d'une liste — l'espace clients d'origine |
+| **Témoignage** | `/temoignages` | grille de vidéos de témoignages |
+| **Répétiteur** | `/repetiteurs` | CV des encadreurs + enregistrement |
+
+**Règle d'accès, la même partout : la page est publique, l'action est fermée.**
+Un visiteur voit les trois pages ; déposer une liste ou enregistrer un CV exige
+une session client, et l'invitation à s'identifier (`AppelConnexion`) remplace
+alors le bouton. Ce n'est pas une redirection : on ne renvoie plus personne vers
+`/connexion` sans lui avoir montré la page.
+
+`/depot` redirige vers `/` — l'ancienne adresse continue de fonctionner.
+Les pages d'authentification gardent la coquille `CoquilleAuth`, sans navbar :
+sur une page de connexion, on ne propose qu'une chose à la fois.
+
+En dessous de **860 px**, la navbar passe sous le logo, sur toute la largeur.
+
+### 14.2 Répétiteurs — table, relation et stockage du CV
+
+**Table `repetiteur`** (nom au singulier, celui du cahier des charges) :
+
+| Colonne | Rôle |
+|---|---|
+| `client_id` | FK vers `clients`, **`unique`** + `ON DELETE CASCADE` |
+| `nom` | saisi au formulaire, peut différer du nom du compte |
+| `cv_fichier` | nom **sur disque**, tiré au sort — jamais celui du client |
+| `cv_nom_origine` | nom d'origine, pour l'affichage et le téléchargement |
+| `cv_octets`, `cree_le`, `maj_le` | métadonnées |
+
+**Relation simple : un client ↔ au plus un profil.** Un client *peut* être
+répétiteur, ou non. L'unicité est portée par la base (index unique sur
+`client_id`), pas seulement par le code : se réenregistrer **remplace** le
+profil au lieu de créer un doublon, et l'ancien CV est effacé du disque —
+mais seulement une fois le remplacement acté en base.
+
+**Stockage du CV** — `backend/app/stockage.py`, dossier réglé par `STOCKAGE_CV`
+(défaut `backend/stockage/cv`, ignoré par git). C'est le **seul** stockage de
+fichiers de la plateforme. Deux précautions :
+
+1. le nom du fichier est tiré au sort (`secrets.token_hex`), seule l'extension
+   validée est reprise — un client ne peut ni écrire ailleurs, ni deviner le
+   nom du CV d'un autre ;
+2. la relecture est bornée au dossier de stockage (`chemin_cv` vérifie que le
+   chemin résolu reste sous la racine).
+
+Formats acceptés : `.pdf`, `.docx`, `.doc`.
+
+### 14.3 Endpoints répétiteurs
+
+| Méthode | Route | Protégée | Rôle |
+|---|---|---|---|
+| `GET` | `/api/repetiteurs` | non | liste publique des profils |
+| `GET` | `/api/repetiteurs/{id}/cv` | non | sert le CV (`inline`) |
+| `GET` | `/api/repetiteurs/moi` | **client** | profil du connecté, ou `null` |
+| `POST` | `/api/repetiteurs` | **client** | crée ou remplace son profil |
+
+### 14.4 Témoignages — source configurable, pas de base
+
+`client/temoignages.js` exporte un simple tableau. **Aucune table** pour ce
+menu. Chaque entrée accepte soit un fichier déposé dans `frontend/public/videos/`,
+soit une URL d'intégration YouTube/Vimeo — `estIntegration()` choisit entre
+`<video>` et `<iframe>`. Tant que `video` est vide, la carte affiche proprement
+« Vidéo à venir » : la grille reste lisible avant même qu'il y ait des vidéos.
+
+### 14.5 À NE PAS FAIRE
+
+- ❌ Enregistrer les dépôts de listes : la règle de la section 12.2 tient
+  toujours. Seul le CV du répétiteur est conservé.
+- ❌ Créer une table pour les témoignages : un fichier de configuration suffit.
+- ❌ Faire confiance au nom de fichier envoyé par le client pour écrire sur
+  disque.
+- ❌ Rediriger un visiteur non connecté hors des pages publiques : on lui montre
+  la page, et on lui propose de s'identifier pour agir.

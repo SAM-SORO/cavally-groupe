@@ -288,11 +288,16 @@
 .cli-entete__inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  max-width: 900px;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  max-width: 1140px;
   margin: 0 auto;
   padding: var(--sp-4) clamp(1.25rem, 0.5rem + 2.5vw, 2rem);
+}
+
+/* La zone de compte est poussée à droite ; la nav reste collée au logo. */
+.cli-entete__inner > .cli-compte {
+  margin-left: auto;
 }
 
 .cli-entete__marque img {
@@ -339,6 +344,11 @@
   max-width: 660px;
   margin: 0 auto;
   padding: clamp(2.5rem, 1.5rem + 3vw, 4rem) clamp(1.25rem, 0.5rem + 2.5vw, 2rem) var(--sp-9);
+}
+
+/* Pages en grille : vidéos de témoignage, CV de répétiteurs. */
+.cli-corps--large {
+  max-width: 1140px;
 }
 
 /* --------------------------------------------------------------------------
@@ -433,7 +443,406 @@
 }
 
 /* --------------------------------------------------------------------------
-   7. Adaptations
+   7. Navigation principale — Accueil / Témoignage / Répétiteur
+   -------------------------------------------------------------------------- */
+
+.cli-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.cli-nav__lien {
+  position: relative;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--r-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-60);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.cli-nav__lien:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.cli-nav__lien.est-actif {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Le trait de la charte marque la page courante — pas de pastille colorée. */
+.cli-nav__lien.est-actif::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.1rem;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+}
+
+.cli-bouton-nav {
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+}
+
+/* --------------------------------------------------------------------------
+   8. En-tête de section et états vides
+   -------------------------------------------------------------------------- */
+
+.cli-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-7);
+}
+
+.cli-section__titre {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.1rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.cli-section__chapo {
+  max-width: 56ch;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--ink-60);
+  margin-top: calc(var(--sp-2) * -1);
+}
+
+.cli-vide {
+  padding: var(--sp-8) var(--sp-5);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+  font-size: 0.94rem;
+  color: var(--ink-45);
+}
+
+/* Invitation à s'identifier, pour les actions réservées aux inscrits. */
+.cli-appel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  width: 100%;
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--brand-wash);
+}
+
+.cli-appel__texte {
+  flex: 1;
+  min-width: 16ch;
+  font-size: 0.93rem;
+  color: var(--ink-80);
+}
+
+.cli-appel__actions {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   9. Témoignages — grille de vidéos
+   -------------------------------------------------------------------------- */
+
+.tem-grille,
+.rep-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-5);
+}
+
+.tem-carte {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--t-base) var(--ease);
+}
+
+.tem-carte:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.tem-carte__media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--black);
+}
+
+.tem-carte__media > video,
+.tem-carte__media > iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+  display: block;
+}
+
+/* Emplacement en attente : lisible, dans la charte, jamais un carré noir. */
+.tem-carte__media--vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+  color: var(--ink-45);
+}
+
+.tem-carte__pied {
+  padding: var(--sp-4);
+}
+
+.tem-carte__personne {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tem-carte__role {
+  margin-top: 0.1rem;
+  font-size: 0.83rem;
+  color: var(--ink-45);
+}
+
+/* --------------------------------------------------------------------------
+   10. Répétiteurs — grille de profils
+   -------------------------------------------------------------------------- */
+
+.rep-carte {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  padding: var(--sp-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--t-base) var(--ease);
+}
+
+.rep-carte:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.rep-carte__initiales {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--brand-veil);
+  border: 1px solid var(--brand);
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rep-carte__identite {
+  min-width: 0;
+}
+
+.rep-carte__nom {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rep-carte__etab {
+  font-size: 0.83rem;
+  color: var(--ink-45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rep-carte__cv {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--ink-80);
+  text-decoration: none;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.rep-carte__cv:hover {
+  border-color: var(--brand);
+  background: var(--brand-wash);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   11. Modal — enregistrement d'un répétiteur
+   -------------------------------------------------------------------------- */
+
+.cli-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(3px);
+  animation: cli-voile-entree var(--t-base) var(--ease-out) both;
+}
+
+@keyframes cli-voile-entree {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cli-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 2 * var(--sp-4));
+  overflow-y: auto;
+  padding: clamp(1.35rem, 1rem + 1.5vw, 2rem);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: cli-modal-entree var(--t-base) var(--ease-out) both;
+}
+
+@keyframes cli-modal-entree {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cli-modal__entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.cli-modal__titre {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+.cli-modal__fermer {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  color: var(--ink-45);
+  transition:
+    background-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.cli-modal__fermer:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.cli-modal__texte {
+  margin-top: var(--sp-2);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--ink-60);
+}
+
+.cli-modal__formulaire {
+  margin-top: var(--sp-5);
+}
+
+.cli-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+/* Sélecteur de CV : plus compact que la zone de dépôt de l'accueil, le modal
+   n'a pas la place — et le geste attendu ici est un simple parcours. */
+.cli-choix-cv {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ink-80);
+  text-align: left;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease);
+}
+
+.cli-choix-cv:hover {
+  border-color: var(--brand);
+  background: var(--brand-wash);
+}
+
+.cli-choix-cv__meta {
+  margin-left: var(--sp-2);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-45);
+}
+
+/* --------------------------------------------------------------------------
+   12. Adaptations
    -------------------------------------------------------------------------- */
 
 /* Sous ce seuil, deux colonnes deviendraient trop étroites : on empile. */
@@ -441,6 +850,23 @@
   .cli-formulaire--duo {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-4);
+  }
+}
+
+/* Le trio logo + nav + compte ne tient plus sur une ligne : la nav passe
+   dessous, sur toute la largeur. */
+@media (max-width: 860px) {
+  .cli-entete__inner {
+    gap: var(--sp-3) var(--sp-4);
+  }
+
+  .cli-nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: center;
+    margin-top: var(--sp-1);
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--line-soft);
   }
 }
 
@@ -455,5 +881,26 @@
 
   .cli-panneau {
     padding: var(--sp-5) var(--sp-4);
+  }
+
+  .cli-nav__lien {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.86rem;
+  }
+
+  .cli-bouton-nav {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.84rem;
+  }
+
+  /* Une carte par ligne plutôt qu'une grille écrasée. */
+  .tem-grille,
+  .rep-grille {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+
+  .cli-appel__actions .bouton {
+    flex: 1;
   }
 }

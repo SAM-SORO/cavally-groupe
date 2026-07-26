@@ -84,6 +84,23 @@ export function Close({ className }) {
   )
 }
 
+export function Lecture({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+      <circle cx="24" cy="24" r="19" fill="var(--brand-veil)" stroke="var(--brand)" strokeWidth="1.6" />
+      <path d="M20 17.5 31 24l-11 6.5V17.5Z" fill="var(--black)" />
+    </svg>
+  )
+}
+
+export function Trombone({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+      <path d="M13.6 9.2 9.4 13.4a2.9 2.9 0 0 1-4.1-4.1l5.2-5.2a1.9 1.9 0 1 1 2.7 2.7l-5.2 5.2a0.9 0.9 0 0 1-1.3-1.3l4.6-4.6" {...stroke} />
+    </svg>
+  )
+}
+
 export function Eye({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">

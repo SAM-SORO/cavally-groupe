@@ -12,6 +12,14 @@ export const FORMATS_CLIENT = ['.pdf', '.docx', '.png', '.jpg', '.jpeg', '.webp'
 export const ACCEPT_CLIENT = FORMATS_CLIENT.join(',')
 export const TAILLE_MAX_MO = 18
 
+// Un CV est un document : ni image, ni tableur. Doit rester aligné sur
+// `FORMATS_CV` dans backend/app/stockage.py.
+export const FORMATS_CV = ['.pdf', '.docx', '.doc']
+export const ACCEPT_CV = FORMATS_CV.join(',')
+
+/** Chemin renvoyé par l'API → URL utilisable dans un lien. */
+export const urlApi = (chemin) => `${BASE}${chemin}`
+
 export class ErreurApi extends Error {
   constructor(message, statut) {
     super(message)
@@ -75,12 +83,30 @@ export function deposerDocument(fichier) {
   return appeler('/api/demandes', { methode: 'POST', corps: donnees })
 }
 
+// — Répétiteurs —
+
+/** Liste publique des profils : consultable sans compte. */
+export const listerRepetiteurs = () => appeler('/api/repetiteurs')
+
+/** Profil du client connecté, ou `null` s'il n'est pas répétiteur. */
+export const monProfilRepetiteur = () => appeler('/api/repetiteurs/moi')
+
+/** Crée — ou remplace — le profil répétiteur du client connecté. */
+export function enregistrerRepetiteur(nom, cv) {
+  const donnees = new FormData()
+  donnees.append('nom', nom)
+  donnees.append('cv', cv)
+  return appeler('/api/repetiteurs', { methode: 'POST', corps: donnees })
+}
+
 export function extensionDe(nom = '') {
   const point = nom.lastIndexOf('.')
   return point === -1 ? '' : nom.slice(point).toLowerCase()
 }
 
 export const formatSupporte = (fichier) => FORMATS_CLIENT.includes(extensionDe(fichier?.name))
+
+export const cvSupporte = (fichier) => FORMATS_CV.includes(extensionDe(fichier?.name))
 
 export function formaterTaille(octets = 0) {
   if (octets < 1024) return `${octets} o`
