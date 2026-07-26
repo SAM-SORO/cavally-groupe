@@ -84,6 +84,26 @@ export function Close({ className }) {
   )
 }
 
+export function Eye({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M2.1 12.3a1 1 0 0 1 0-.7 10.7 10.7 0 0 1 19.8 0 1 1 0 0 1 0 .7 10.7 10.7 0 0 1-19.8 0Z" {...stroke} />
+      <circle cx="12" cy="12" r="3" {...stroke} />
+    </svg>
+  )
+}
+
+export function EyeOff({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M10.7 5.1a10.7 10.7 0 0 1 11.2 6.5 1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5" {...stroke} />
+      <path d="M14.1 14.2a3 3 0 0 1-4.3-4.3" {...stroke} />
+      <path d="M17.5 17.5A10.7 10.7 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.7 10.7 0 0 1 4.4-5.1" {...stroke} />
+      <path d="m3 3 18 18" {...stroke} />
+    </svg>
+  )
+}
+
 export function Spinner({ className }) {
   return (
     <svg className={className} viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">

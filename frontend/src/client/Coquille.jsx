@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom'
 import logo from '../assets/logo-cavally-livres.png'
 import { useAuth } from './AuthContext.jsx'
 
-/** Enveloppe des pages d'inscription et de connexion : logo, puis la carte. */
-export function CoquilleAuth({ children }) {
+/**
+ * Enveloppe des pages d'inscription et de connexion : logo, puis la carte.
+ * `large` élargit la coquille pour les formulaires disposés en deux colonnes.
+ */
+export function CoquilleAuth({ children, large = false }) {
   return (
     <div className="cli-page cli-page--auth">
-      <main className="cli-auth">
+      <main className={large ? 'cli-auth cli-auth--large' : 'cli-auth'}>
         <Link to="/" className="cli-auth__marque" aria-label="Cavally Livres">
           <img src={logo} alt="Cavally Livres" width="758" height="240" />
         </Link>

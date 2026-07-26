@@ -53,12 +53,13 @@ export default function PageInscription() {
   }
 
   return (
-    <CoquilleAuth>
+    <CoquilleAuth large>
       <section className="cli-carte">
         <h1 className="cli-carte__titre">Créer un compte</h1>
         <p className="cli-carte__chapo">Quelques informations, et vous pouvez déposer vos listes.</p>
 
-        <form className="cli-formulaire" onSubmit={soumettre} noValidate>
+        {/* Deux colonnes sur écran large, une seule sur mobile — voir client.css. */}
+        <form className="cli-formulaire cli-formulaire--duo" onSubmit={soumettre} noValidate>
           <Champ
             libelle="Nom complet"
             valeur={champs.nom_complet}
@@ -75,6 +76,7 @@ export default function PageInscription() {
             inputMode="tel"
             placeholder="+225 07 97 99 19 99"
           />
+          {/* Champ long : il occupe la ligne entière, les autres vont par deux. */}
           <Champ
             libelle="Adresse email"
             type="email"
@@ -82,6 +84,7 @@ export default function PageInscription() {
             onChange={majChamp('email')}
             autoComplete="email"
             placeholder="vous@exemple.com"
+            large
           />
           <Champ
             libelle="Établissement"

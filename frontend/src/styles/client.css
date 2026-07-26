@@ -40,6 +40,11 @@
   gap: var(--sp-6);
 }
 
+/* Coquille élargie : accueille le formulaire en deux colonnes. */
+.cli-auth--large {
+  max-width: 660px;
+}
+
 .cli-auth__marque img {
   height: 34px;
   width: auto;
@@ -86,6 +91,23 @@
   flex-direction: column;
   gap: var(--sp-4);
   margin-top: var(--sp-6);
+}
+
+/* Formulaire long : deux colonnes sur écran large, pour ne pas obliger à
+   dérouler la page alors que la place est disponible. Le repli sur une seule
+   colonne est géré plus bas, au point de rupture. */
+.cli-formulaire--duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4) var(--sp-5);
+  align-items: start;
+}
+
+/* Champ long, alerte et bouton : toujours sur toute la largeur. */
+.cli-formulaire--duo > .cli-champ--large,
+.cli-formulaire--duo > .cli-alerte,
+.cli-formulaire--duo > .cli-bouton-bloc {
+  grid-column: 1 / -1;
 }
 
 .cli-bascule {
@@ -181,21 +203,31 @@
   box-shadow: 0 0 0 3px var(--brand-a20);
 }
 
-.cli-champ__bascule {
+/* Le texte ne doit jamais passer sous l'œil. */
+.cli-champ__saisie--protegee {
+  padding-right: 2.9rem;
+}
+
+.cli-champ__oeil {
   position: absolute;
-  right: 0.5rem;
-  padding: 0.3rem 0.5rem;
+  right: 0.45rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
   border-radius: var(--r-sm);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ink-60);
+  color: var(--ink-45);
   transition:
     background-color var(--t-fast) var(--ease),
     color var(--t-fast) var(--ease);
 }
 
-.cli-champ__bascule:hover {
+.cli-champ__oeil:hover {
   background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.cli-champ__oeil[aria-pressed='true'] {
   color: var(--ink);
 }
 
@@ -403,6 +435,14 @@
 /* --------------------------------------------------------------------------
    7. Adaptations
    -------------------------------------------------------------------------- */
+
+/* Sous ce seuil, deux colonnes deviendraient trop étroites : on empile. */
+@media (max-width: 640px) {
+  .cli-formulaire--duo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+}
 
 @media (max-width: 560px) {
   .cli-compte {

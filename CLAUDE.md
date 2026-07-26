@@ -285,6 +285,24 @@ entrer en collision avec `app.css`.
 5 champs (établissement explicitement facultatif). Connexion = 2 champs. Dépôt =
 une zone de glisser-déposer et un bouton, puis une confirmation.
 
+**Formulaire d'inscription — deux colonnes responsives.** Cinq champs empilés
+obligent à dérouler la page sur un écran large alors que la place existe. Le
+formulaire porte donc `.cli-formulaire--duo` : une grille
+`repeat(2, minmax(0, 1fr))` sur desktop, repliée sur **une seule colonne sous
+640 px**. L'adresse email — champ long — occupe la ligne entière via la prop
+`large` du composant `Champ` (`.cli-champ--large`), tout comme l'alerte et le
+bouton. La coquille passe à `.cli-auth--large` (660 px) pour accueillir la
+grille. Les formulaires courts (connexions client et admin) restent en colonne
+simple : deux champs ne justifient pas une grille.
+
+**Mot de passe — icône œil.** Le basculement visible/masqué se fait par une
+**icône** `Eye` / `EyeOff` (`components/Icons.jsx`) posée dans le champ, jamais
+par un libellé « afficher / masquer ». C'est le standard attendu et cela ne
+dépend pas de la longueur du mot traduit. L'état reste annoncé aux lecteurs
+d'écran par `aria-label` + `aria-pressed`. Le comportement vit dans `Champ.jsx`,
+donc il s'applique d'office aux trois formulaires (inscription, connexion
+client, connexion admin).
+
 ### 12.7 À NE PAS FAIRE
 
 - ❌ Relier le dépôt client à l'extraction Gemini ou à la génération Excel.
@@ -351,6 +369,19 @@ Côté interface, `/interne` est derrière `RouteAdmin` et redirige vers
 `/interne/connexion`. **Ce garde-fou n'est qu'un confort** : le contrôle qui
 fait autorité est la dépendance backend. Forcer l'affichage ne permet de
 générer aucun devis.
+
+**Matrice vérifiée sur l'API en marche** (pas seulement à la lecture du code) :
+
+| Appelant | `POST /api/process` | `?probe=1` | `/api/admin/moi` | `/api/auth/moi` |
+|---|---|---|---|---|
+| visiteur anonyme | 401 | 401 | 401 | 401 |
+| client externe connecté | 401 | 401 | 401 | 200 |
+| jeton client renommé en `cavally_admin` | **401** | — | — | — |
+| admin authentifié | passe (415/422 selon le fichier) | 200 | 200 | **401** |
+
+La troisième ligne est celle qui compte : renommer le cookie ne suffit pas,
+c'est le `role` scellé dans le JWT qui est vérifié. La dernière ligne montre le
+cloisonnement inverse — un admin n'entre pas dans l'espace clients.
 
 ### 13.5 À NE PAS FAIRE
 
