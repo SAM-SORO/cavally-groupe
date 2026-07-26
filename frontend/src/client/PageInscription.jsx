@@ -62,7 +62,6 @@ export default function PageInscription() {
     <CoquilleAuth large>
       <section className="cli-carte">
         <h1 className="cli-carte__titre">Créer un compte</h1>
-        <p className="cli-carte__chapo">Quelques informations, et vous pouvez déposer vos listes.</p>
 
         {/* Deux colonnes sur écran large, une seule sur mobile — voir client.css. */}
         <form className="cli-formulaire cli-formulaire--duo" onSubmit={soumettre} noValidate>

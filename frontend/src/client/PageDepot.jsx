@@ -234,7 +234,11 @@ export default function PageDepot() {
               value={texte}
               onChange={(e) => setTexte(e.target.value)}
               placeholder={'5 cahiers 200 pages\n2 stylos bleus\n1 boîte de crayons de couleur\n…'}
-              rows={9}
+              // Le champ Téléphone n'apparaît qu'une fois, pour un compte
+              // ouvert avec Google. Ce jour-là, la saisie cède deux lignes
+              // pour que la page continue de tenir dans l'écran ; le reste du
+              // temps elle garde toute sa hauteur.
+              rows={client && !client.contact ? 7 : 9}
               disabled={Boolean(fichier) || enCours}
               spellCheck="false"
             />

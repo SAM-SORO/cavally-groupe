@@ -372,13 +372,24 @@ deux entrées et un bouton, puis une confirmation.
 page, pas un souhait : le rythme vertical (`.cli-auth`, `.cli-corps`,
 `.cli-carte`) est calibré pour cela.
 
-⚠️ **La place se prend sur les marges, jamais sur les deux zones de dépôt.**
-Elles font la page et doivent rester généreuses (~320 px chacune). Mesuré à
-695 px de hauteur utile : accueil 609 px, connexion 577 px, inscription 682 px,
-et 688 px pour l'accueil dans son cas le plus chargé — quand le champ Téléphone
-s'ajoute, pour un compte ouvert avec Google qui n'a pas encore déposé. Ce
-dernier cas ne laisse que 7 px : **tout ajout de contenu sur l'accueil doit
-être mesuré**, pas estimé.
+⚠️ **La place se prend sur les marges et sur le texte, jamais sur les deux
+zones de dépôt.** Elles font la page et restent à ~320 px chacune.
+
+Mesuré à 695 px de hauteur utile, `scrollMax = 0` partout :
+
+| Page | Contenu | Marge |
+|---|---|---|
+| Accueil | 619 px | 76 px |
+| Accueil + champ Téléphone | 650 px | 45 px |
+| Connexion | 629 px | 66 px |
+| Inscription | 687 px | 8 px |
+
+Le champ Téléphone n'apparaît qu'une fois, pour un compte ouvert avec Google
+qui n'a pas encore déposé. Ce jour-là seulement, la saisie passe de 9 à 7
+lignes — le reste du temps elle garde toute sa hauteur.
+
+L'inscription ne dispose que de 8 px : **tout ajout de champ ou de ligne de
+texte sur ces pages doit être mesuré**, pas estimé.
 
 **Formulaire d'inscription — deux colonnes responsives.** Cinq champs empilés
 obligent à dérouler la page sur un écran large alors que la place existe. Le
