@@ -5,7 +5,7 @@ import {
   ACCEPT_CLIENT,
   FORMATS_CLIENT,
   TAILLE_MAX_MO,
-  deposerDocument,
+  deposerDemande,
   extensionDe,
   formatSupporte,
   formaterTaille,
@@ -29,6 +29,7 @@ export default function PageDepot() {
   const { client, rafraichir } = useAuth()
 
   const [fichier, setFichier] = useState(null)
+  const [texte, setTexte] = useState('')
   const [statut, setStatut] = useState('repos') // repos | envoi | confirme
   const [erreur, setErreur] = useState(null)
   const [survol, setSurvol] = useState(false)
@@ -36,9 +37,16 @@ export default function PageDepot() {
   const [besoinConnexion, setBesoinConnexion] = useState(false)
   // Réclamé seulement si le compte n'a pas encore de numéro (ouverture Google).
   const [contact, setContact] = useState('')
+  // Ce qui a effectivement été envoyé — sert au texte de confirmation.
+  const [envoye, setEnvoye] = useState(null)
 
   const compteur = useRef(0)
   const input = useRef(null)
+
+  const saisie = texte.trim()
+  // Un document déposé l'emporte : la saisie devient inutile, et on le dit
+  // plutôt que de l'ignorer en silence.
+  const pretAEnvoyer = Boolean(fichier) || saisie.length > 0
 
   const choisir = (liste) => {
     const candidat = liste?.[0]
@@ -65,10 +73,10 @@ export default function PageDepot() {
   }
 
   const envoyer = async () => {
-    if (!fichier) return
+    if (!pretAEnvoyer) return
 
-    // La session n'est vérifiée qu'ici : on laisse choisir son document, et
-    // on ne demande de s'identifier qu'au moment de l'envoi.
+    // La session n'est vérifiée qu'ici : on laisse préparer sa demande, et on
+    // ne demande de s'identifier qu'au moment de l'envoi.
     if (!client) {
       setErreur(null)
       setBesoinConnexion(true)
@@ -78,10 +86,16 @@ export default function PageDepot() {
     setErreur(null)
     setStatut('envoi')
     try {
-      await deposerDocument(fichier, contact.trim())
+      const reponse = await deposerDemande({
+        fichier,
+        // Le fichier prime : inutile d'envoyer les deux.
+        texte: fichier ? '' : saisie,
+        contact: contact.trim(),
+      })
       // Le numéro vient peut-être d'être enregistré côté serveur : on relit la
       // session pour que la confirmation affiche la bonne valeur.
       if (!client.contact) await rafraichir()
+      setEnvoye(reponse)
       setStatut('confirme')
     } catch (exception) {
       // Session expirée entre-temps : même invitation que pour un visiteur.
@@ -95,10 +109,17 @@ export default function PageDepot() {
     }
   }
 
-  const recommencer = () => {
+  const retirerFichier = () => {
     setFichier(null)
     setErreur(null)
+  }
+
+  const recommencer = () => {
+    setFichier(null)
+    setTexte('')
+    setErreur(null)
     setBesoinConnexion(false)
+    setEnvoye(null)
     setStatut('repos')
   }
 
@@ -113,7 +134,7 @@ export default function PageDepot() {
             Votre liste est transmise à notre équipe. Nous la traitons et revenons vers vous
             au {client?.contact || contact}.
           </p>
-          <p className="cli-panneau__fichier">{fichier?.name}</p>
+          <p className="cli-panneau__fichier">{envoye?.fichier}</p>
           <button type="button" className="bouton bouton--discret" onClick={recommencer}>
             Déposer une autre liste
           </button>
@@ -123,71 +144,106 @@ export default function PageDepot() {
   }
 
   const extension = fichier ? extensionDe(fichier.name) : ''
+  const enCours = statut === 'envoi'
 
   return (
-    <CoquillePublique>
-      <section className="cli-panneau">
+    <CoquillePublique large>
+      <section className="cli-panneau cli-panneau--depot">
         <h1 className="cli-panneau__titre">Déposer une liste de fournitures</h1>
         <p className="cli-panneau__texte">
-          Word, PDF ou photo de la liste. Notre équipe s’occupe du reste.
+          Envoyez votre document, ou tapez simplement votre liste. L’un ou l’autre suffit.
         </p>
 
-        {fichier ? (
-          <div className="fiche cli-fiche">
-            <div className="fiche__doc">
-              <span className="fiche__badge">{LIBELLES_FORMAT[extension] ?? 'DOC'}</span>
-              <span className="fiche__infos">
-                <span className="fiche__nom" title={fichier.name}>
-                  {fichier.name}
-                </span>
-                <span className="fiche__meta">{formaterTaille(fichier.size)}</span>
-              </span>
+        {/* Deux entrées côte à côte ; elles s'empilent sur petit écran. */}
+        <div className="cli-duo">
+          <div className="cli-duo__voie">
+            <p className="cli-duo__titre">J’ai un document</p>
+
+            {fichier ? (
+              <div className="fiche cli-fiche">
+                <div className="fiche__doc">
+                  <span className="fiche__badge">{LIBELLES_FORMAT[extension] ?? 'DOC'}</span>
+                  <span className="fiche__infos">
+                    <span className="fiche__nom" title={fichier.name}>
+                      {fichier.name}
+                    </span>
+                    <span className="fiche__meta">{formaterTaille(fichier.size)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="fiche__retirer"
+                    onClick={retirerFichier}
+                    aria-label="Retirer le document"
+                    disabled={enCours}
+                  >
+                    <Close />
+                  </button>
+                </div>
+              </div>
+            ) : (
               <button
                 type="button"
-                className="fiche__retirer"
-                onClick={recommencer}
-                aria-label="Retirer le document"
-                disabled={statut === 'envoi'}
+                className={`depot cli-depot${survol ? ' est-survole' : ''}`}
+                onClick={() => input.current?.click()}
+                disabled={enCours}
+                onDragEnter={(e) => {
+                  e.preventDefault()
+                  compteur.current += 1
+                  setSurvol(true)
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDragLeave={(e) => {
+                  e.preventDefault()
+                  compteur.current = Math.max(0, compteur.current - 1)
+                  if (compteur.current === 0) setSurvol(false)
+                }}
+                onDrop={auDepot}
               >
-                <Close />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={`depot cli-depot${survol ? ' est-survole' : ''}`}
-            onClick={() => input.current?.click()}
-            onDragEnter={(e) => {
-              e.preventDefault()
-              compteur.current += 1
-              setSurvol(true)
-            }}
-            onDragOver={(e) => e.preventDefault()}
-            onDragLeave={(e) => {
-              e.preventDefault()
-              compteur.current = Math.max(0, compteur.current - 1)
-              if (compteur.current === 0) setSurvol(false)
-            }}
-            onDrop={auDepot}
-          >
-            <span className="depot__halo" aria-hidden="true" />
-            <DocumentStack className="depot__illustration" />
-            <span className="depot__titre">
-              {survol ? 'Relâchez pour ajouter' : 'Déposez votre liste'}
-            </span>
-            <span className="depot__sous-titre">
-              Glissez le fichier ici, ou <span className="depot__lien">parcourez vos documents</span>
-            </span>
-            <span className="depot__formats">
-              {FORMATS_CLIENT.filter((f) => f !== '.jpeg').map((format) => (
-                <span key={format} className="jeton">
-                  {format.replace('.', '')}
+                <span className="depot__halo" aria-hidden="true" />
+                <DocumentStack className="depot__illustration" />
+                <span className="depot__titre">
+                  {survol ? 'Relâchez pour ajouter' : 'Déposez votre liste'}
                 </span>
-              ))}
-            </span>
-          </button>
-        )}
+                <span className="depot__sous-titre">
+                  Glissez le fichier ici, ou{' '}
+                  <span className="depot__lien">parcourez vos documents</span>
+                </span>
+                <span className="depot__formats">
+                  {FORMATS_CLIENT.filter((f) => f !== '.jpeg').map((format) => (
+                    <span key={format} className="jeton">
+                      {format.replace('.', '')}
+                    </span>
+                  ))}
+                </span>
+              </button>
+            )}
+          </div>
+
+          <p className="cli-duo__ou" aria-hidden="true">
+            <span>ou</span>
+          </p>
+
+          <div className="cli-duo__voie">
+            <label className="cli-duo__titre" htmlFor="saisie-liste">
+              Je tape ma liste
+            </label>
+            <textarea
+              id="saisie-liste"
+              className="cli-saisie"
+              value={texte}
+              onChange={(e) => setTexte(e.target.value)}
+              placeholder={'5 cahiers 200 pages\n2 stylos bleus\n1 boîte de crayons de couleur\n…'}
+              rows={10}
+              disabled={Boolean(fichier) || enCours}
+              spellCheck="false"
+            />
+            <p className="cli-duo__note">
+              {fichier
+                ? 'Votre document sera envoyé tel quel. Retirez-le pour saisir une liste à la place.'
+                : 'Une ligne par article. Nous en faisons un document propre pour notre équipe.'}
+            </p>
+          </div>
+        </div>
 
         {/* Le compte existe mais n'a pas de numéro : c'est ici qu'il sert,
             c'est donc ici qu'on le demande — une seule fois. */}
@@ -212,7 +268,7 @@ export default function PageDepot() {
 
         {besoinConnexion && (
           <AppelConnexion
-            texte="Votre document est prêt. Identifiez-vous pour l’envoyer — cela prend quelques secondes."
+            texte="Votre demande est prête. Identifiez-vous pour l’envoyer — cela prend quelques secondes."
             retour="/"
           />
         )}
@@ -221,9 +277,9 @@ export default function PageDepot() {
           type="button"
           className="bouton bouton--primaire cli-bouton-bloc"
           onClick={envoyer}
-          disabled={!fichier || statut === 'envoi'}
+          disabled={!pretAEnvoyer || enCours}
         >
-          {statut === 'envoi' ? (
+          {enCours ? (
             <>
               <Spinner className="tourne" />
               Envoi en cours…

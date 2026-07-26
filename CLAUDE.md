@@ -202,6 +202,31 @@ Voir `backend/.env.example` pour la liste complète des variables.
 Espace public de la plateforme. **Strictement séparé de l'outil interne** : il ne
 touche ni à Gemini, ni à openpyxl, ni au code des sections 5 et 6.
 
+### 12.0 Deux entrées, une seule sortie
+
+Sur la page d'envoi, **deux moyens côte à côte** de soumettre une demande :
+
+| Voie | Contenu | Ce qui part sur WhatsApp |
+|---|---|---|
+| **Gauche** — glisser-déposer | PDF, Word, image | le document **tel quel** |
+| **Droite** — champ de saisie | la liste tapée au clavier | un **`.docx` généré** par le serveur |
+
+Le client remplit **l'une OU l'autre**, et il n'y a **qu'un seul bouton
+d'envoi**. Si un document est joint, la saisie est désactivée avec une mention
+explicite : mieux vaut le dire que d'ignorer en silence ce qui aurait été tapé.
+
+**Pourquoi générer un document plutôt que de relayer le texte** : l'entreprise
+doit toujours recevoir une **pièce jointe exploitable**, jamais un long message
+qui se perd dans une conversation WhatsApp. `backend/app/redaction.py` fabrique
+donc un `.docx` portant en tête les coordonnées du soumissionnaire (nom,
+téléphone, email, établissement si renseigné), puis la liste.
+
+⚠️ **Aucune analyse à cette étape.** Les lignes sont reprises telles quelles :
+seules les puces décoratives (`-`, `*`, `•`) sont retirées. Les **nombres sont
+conservés** — « 1. Cahier » comme « 3 ardoises » peuvent porter une quantité, et
+la perdre fausserait le devis. L'extraction Gemini reste l'affaire de l'outil
+interne, plus tard et de son côté.
+
 ### 12.1 Parcours
 
 ```
@@ -318,7 +343,7 @@ Le reste du code ne connaît que `obtenir_relais()` et `envoyer_demande()`.
 | `POST` | `/api/auth/google` | non | vérifie le jeton Google, crée ou retrouve le compte |
 | `POST` | `/api/auth/deconnexion` | non | efface le cookie |
 | `GET` | `/api/auth/moi` | oui | session courante |
-| `POST` | `/api/demandes` | oui | relaie le document sur WhatsApp, **ne stocke rien** |
+| `POST` | `/api/demandes` | oui | relaie un document sur WhatsApp — déposé (`file`) ou rédigé depuis la saisie (`texte`). **Ne stocke rien** |
 
 ### 12.6 UI
 
@@ -351,6 +376,10 @@ client, connexion admin).
 ### 12.7 À NE PAS FAIRE
 
 - ❌ Relier le dépôt client à l'extraction Gemini ou à la génération Excel.
+- ❌ Relayer la liste saisie sous forme de message texte : l'entreprise doit
+  recevoir une pièce jointe, pas un pavé dans une conversation.
+- ❌ « Nettoyer » la saisie en retirant les nombres en tête de ligne : ce sont
+  peut-être des quantités.
 - ❌ Créer une table de demandes / commandes / historique d'uploads.
 - ❌ Stocker le document du client sur disque ou en base.
 - ❌ Confirmer au client une transmission WhatsApp qui a échoué.

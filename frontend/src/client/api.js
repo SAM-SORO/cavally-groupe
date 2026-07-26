@@ -85,12 +85,18 @@ export const recupererSession = () => appeler('/api/auth/moi')
 export const etatService = () => appeler('/api/health')
 
 /**
- * Dépose une demande. `contact` n'est envoyé que si le compte n'a pas encore
- * de numéro (cas d'une ouverture avec Google) ; le serveur le retient alors.
+ * Dépose une demande : **un document OU une liste tapée**, jamais les deux.
+ *
+ * Quand seule la saisie est fournie, c'est le serveur qui en fait un `.docx` —
+ * l'entreprise reçoit toujours un document, jamais un pavé de texte.
+ *
+ * `contact` n'est envoyé que si le compte n'a pas encore de numéro (cas d'une
+ * ouverture avec Google) ; le serveur le retient alors sur le compte.
  */
-export function deposerDocument(fichier, contact) {
+export function deposerDemande({ fichier, texte, contact }) {
   const donnees = new FormData()
-  donnees.append('file', fichier)
+  if (fichier) donnees.append('file', fichier)
+  if (texte) donnees.append('texte', texte)
   if (contact) donnees.append('contact', contact)
   return appeler('/api/demandes', { methode: 'POST', corps: donnees })
 }

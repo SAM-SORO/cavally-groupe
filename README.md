@@ -190,6 +190,7 @@ backend/
     # — Espace clients —
     schemas_client.py validation inscription / connexion
     routes_client.py  /api/auth/* et /api/demandes
+    redaction.py      liste tapée → .docx (python-docx), sans aucune analyse
     whatsapp.py       relais isolé : RelaisSimule | RelaisCloudAPI
 
     # — Répétiteurs —
@@ -229,6 +230,28 @@ bouton. Le lien porte `?retour=`, borné aux chemins internes, pour le ramener o
 ---
 
 ## Espace clients externes
+
+### Deux entrées, une seule sortie
+
+La page d'envoi propose **deux moyens côte à côte** : la zone de glisser-déposer à gauche, un
+champ de saisie libre à droite. Le client remplit l'un **ou** l'autre, et un seul bouton envoie.
+
+| Ce que fait le client | Ce que reçoit l'entreprise |
+|---|---|
+| dépose un PDF | le PDF, tel quel |
+| dépose un Word | le Word, tel quel |
+| tape sa liste | un **`.docx` généré** par le serveur |
+
+L'entreprise reçoit **toujours une pièce jointe**, jamais un long message texte qui se perdrait
+dans la conversation WhatsApp. Le `.docx` (`backend/app/redaction.py`, python-docx) porte en tête
+les coordonnées du soumissionnaire, puis la liste.
+
+**Aucune analyse à cette étape** : les lignes sont reprises telles quelles, seules les puces
+décoratives (`-`, `*`, `•`) sont retirées. Les nombres en tête de ligne sont **conservés** — ce
+sont peut-être des quantités. L'extraction Gemini reste l'affaire de l'outil interne.
+
+Si un document est joint, le champ de saisie est désactivé avec une mention explicite : mieux
+vaut le dire que d'ignorer en silence ce qui aurait été tapé.
 
 ### Parcours
 

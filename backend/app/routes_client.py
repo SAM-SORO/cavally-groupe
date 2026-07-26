@@ -18,6 +18,12 @@ from .config import get_settings
 from .db import get_db
 from .google_auth import JetonGoogleInvalide, verifier_credential
 from .models import Client
+from .redaction import (
+    LONGUEUR_MAX_TEXTE,
+    LONGUEUR_MIN_TEXTE,
+    construire_docx,
+    nom_fichier,
+)
 from .schemas_client import (
     ClientSortie,
     ConnexionEntree,
@@ -192,17 +198,27 @@ def moi(client: Client = Depends(client_courant)) -> Client:
 
 @demandes.post("", response_model=DemandeSortie, status_code=status.HTTP_202_ACCEPTED)
 async def deposer(
-    fichier: UploadFile = File(..., alias="file"),
+    # Les deux entrees possibles — le client remplit l'une OU l'autre.
+    fichier: UploadFile | None = File(default=None, alias="file"),
+    texte: str | None = Form(default=None),
     # Complete le compte quand le numero manque — cas d'une ouverture par Google.
     contact: str | None = Form(default=None),
     client: Client = Depends(client_courant),
     db: Session = Depends(get_db),
 ) -> DemandeSortie:
-    """Relaie le document du client a l'entreprise sur WhatsApp.
+    """Relaie la demande du client a l'entreprise sur WhatsApp.
 
-    Aucune conversion, aucune extraction, aucun enregistrement du document :
-    il est transmis tel quel puis ecarte. C'est l'entreprise qui le traitera
-    ensuite dans l'outil interne.
+    Deux entrees, **une seule sortie** : l'entreprise recoit toujours un
+    document, jamais un long message texte qui se perdrait dans la
+    conversation.
+
+    - un fichier depose (PDF, Word, image) part **tel quel** ;
+    - une liste tapee au clavier est **mise en document** (`.docx`) avant
+      l'envoi, avec en tete les coordonnees du soumissionnaire.
+
+    Dans les deux cas : aucune extraction Gemini, aucune generation Excel,
+    aucun enregistrement. C'est l'equipe qui traitera le document, de son cote,
+    dans l'outil interne.
     """
     # Le numero est indispensable ici, et seulement ici : c'est par lui que
     # l'equipe rappelle. On le reclame donc au moment du depot plutot qu'a
@@ -220,36 +236,74 @@ async def deposer(
         db.commit()
         db.refresh(client)
 
-    nom = fichier.filename or "document"
-    extension = Path(nom).suffix.lower()
+    # Un champ fichier vide arrive tout de meme, sans nom : ce n'est pas un depot.
+    depot_fichier = fichier is not None and bool(fichier.filename)
+    saisie = (texte or "").strip()
 
-    if extension not in FORMATS_CLIENT:
+    if not depot_fichier and not saisie:
         raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=(
-                f"Format « {extension or 'inconnu'} » non pris en charge. "
-                f"Formats acceptés : {', '.join(FORMATS_CLIENT)}."
-            ),
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Déposez un document ou saisissez votre liste de fournitures.",
         )
 
-    # Lecture bornee : on refuse avant de tout charger en memoire.
-    morceaux: list[bytes] = []
-    taille = 0
-    while True:
-        morceau = await fichier.read(1024 * 1024)
-        if not morceau:
-            break
-        taille += len(morceau)
-        if taille > settings.max_upload_bytes:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"Fichier trop volumineux (limite {settings.max_upload_mb} Mo).",
-            )
-        morceaux.append(morceau)
+    if depot_fichier:
+        # — Cas 1 et 2 : le document du client part tel quel —
+        nom = fichier.filename or "document"
+        extension = Path(nom).suffix.lower()
 
-    contenu = b"".join(morceaux)
-    if not contenu:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Le fichier reçu est vide.")
+        if extension not in FORMATS_CLIENT:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=(
+                    f"Format « {extension or 'inconnu'} » non pris en charge. "
+                    f"Formats acceptés : {', '.join(FORMATS_CLIENT)}."
+                ),
+            )
+
+        # Lecture bornee : on refuse avant de tout charger en memoire.
+        morceaux: list[bytes] = []
+        taille = 0
+        while True:
+            morceau = await fichier.read(1024 * 1024)
+            if not morceau:
+                break
+            taille += len(morceau)
+            if taille > settings.max_upload_bytes:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"Fichier trop volumineux (limite {settings.max_upload_mb} Mo).",
+                )
+            morceaux.append(morceau)
+
+        contenu = b"".join(morceaux)
+        if not contenu:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Le fichier reçu est vide."
+            )
+        redige = False
+    else:
+        # — Cas 3 : la liste tapee devient un document —
+        if len(saisie) < LONGUEUR_MIN_TEXTE:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Votre liste est trop courte pour être transmise.",
+            )
+        if len(saisie) > LONGUEUR_MAX_TEXTE:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Votre liste dépasse {LONGUEUR_MAX_TEXTE} caractères. Déposez plutôt un document.",
+            )
+        try:
+            contenu = construire_docx(client, saisie)
+        except Exception:
+            logger.exception("Rédaction du document impossible pour #%d", client.id)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="La mise en document de votre liste a échoué. Réessayez dans un instant.",
+            )
+        nom = nom_fichier(client)
+        taille = len(contenu)
+        redige = True
 
     document = DocumentClient(nom_fichier=nom, contenu=contenu)
     relais = obtenir_relais()
@@ -266,10 +320,11 @@ async def deposer(
         )
 
     logger.info(
-        "Demande de #%d (%s) — %s, %.1f Ko — %s",
+        "Demande de #%d (%s) — %s (%s), %.1f Ko — %s",
         client.id,
         client.nom_complet,
         nom,
+        "rédigé depuis la saisie" if redige else "déposé par le client",
         taille / 1024,
         "transmise" if resultat.transmis else "SIMULÉE",
     )

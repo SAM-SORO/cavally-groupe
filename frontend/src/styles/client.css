@@ -387,6 +387,111 @@
   margin-top: var(--sp-2);
 }
 
+/* --- Les deux entrées côte à côte : document à gauche, saisie à droite --- */
+
+.cli-panneau--depot {
+  max-width: 940px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.cli-duo {
+  display: grid;
+  /* Deux voies de largeur égale, séparées par le « ou ». */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--sp-5);
+  margin-top: var(--sp-2);
+}
+
+.cli-duo__voie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.cli-duo__titre {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* La zone de dépôt occupe toute la hauteur de sa voie, comme la saisie. */
+.cli-duo__voie > .cli-depot {
+  flex: 1;
+  margin-top: 0;
+}
+
+.cli-duo__voie > .cli-fiche {
+  margin-top: 0;
+}
+
+/* Séparateur vertical avec le mot au milieu. */
+.cli-duo__ou {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.78rem;
+  color: var(--ink-45);
+  padding-top: 1.6rem; /* aligne le « ou » sous les intitulés de voie */
+}
+
+.cli-duo__ou::before,
+.cli-duo__ou::after {
+  content: '';
+  flex: 1;
+  width: 1px;
+  background: var(--line);
+}
+
+.cli-saisie {
+  flex: 1;
+  width: 100%;
+  min-height: 232px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-family: inherit;
+  font-size: 0.93rem;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: vertical;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+
+.cli-saisie::placeholder {
+  color: var(--ink-45);
+}
+
+.cli-saisie:hover:not(:disabled) {
+  border-color: var(--ink-45);
+}
+
+.cli-saisie:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-a20);
+}
+
+/* Un document est joint : la saisie devient inutile, et cela se voit. */
+.cli-saisie:disabled {
+  background: var(--surface-sunken);
+  color: var(--ink-45);
+  cursor: not-allowed;
+  resize: none;
+}
+
+.cli-duo__note {
+  font-size: 0.79rem;
+  line-height: 1.5;
+  color: var(--ink-45);
+}
+
 .cli-fiche {
   margin-top: var(--sp-2);
   box-shadow: none;
@@ -885,6 +990,30 @@
   .cli-formulaire--duo {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-4);
+  }
+}
+
+/* Dépôt et saisie ne tiennent plus côte à côte : ils s'empilent, et le
+   séparateur bascule à l'horizontale. */
+@media (max-width: 780px) {
+  .cli-duo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+
+  .cli-duo__ou {
+    flex-direction: row;
+    padding-top: 0;
+  }
+
+  .cli-duo__ou::before,
+  .cli-duo__ou::after {
+    width: auto;
+    height: 1px;
+  }
+
+  .cli-saisie {
+    min-height: 180px;
   }
 }
 
