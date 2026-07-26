@@ -29,15 +29,17 @@
    1. Pages d'authentification
    -------------------------------------------------------------------------- */
 
+/* Rythme resserré : connexion et inscription doivent tenir dans un écran,
+   sans défilement, y compris sur un portable 768 px de haut. */
 .cli-auth {
   width: 100%;
   max-width: 452px;
   margin: 0 auto;
-  padding: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--sp-5) var(--sp-8);
+  padding: clamp(1.25rem, 1rem + 1.2vw, 2rem) var(--sp-5) var(--sp-5);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-6);
+  gap: var(--sp-4);
 }
 
 /* Coquille élargie : accueille le formulaire en deux colonnes. */
@@ -46,13 +48,13 @@
 }
 
 .cli-auth__marque img {
-  height: 34px;
+  height: 28px;
   width: auto;
 }
 
 .cli-carte {
   width: 100%;
-  padding: clamp(1.5rem, 1rem + 2vw, 2.25rem);
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem);
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
   background: var(--surface);
@@ -73,7 +75,7 @@
 
 .cli-carte__titre {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.025em;
   color: var(--ink);
@@ -89,8 +91,8 @@
 .cli-formulaire {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
-  margin-top: var(--sp-6);
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
 }
 
 /* Formulaire long : deux colonnes sur écran large, pour ne pas obliger à
@@ -99,7 +101,7 @@
 .cli-formulaire--duo {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-4) var(--sp-5);
+  gap: var(--sp-3) var(--sp-5);
   align-items: start;
 }
 
@@ -149,7 +151,7 @@
 .cli-champ {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: 0.35rem;
 }
 
 .cli-champ__libelle {
@@ -177,7 +179,7 @@
 
 .cli-champ__saisie {
   width: 100%;
-  padding: 0.72rem 0.9rem;
+  padding: 0.62rem 0.9rem;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--white);
@@ -343,7 +345,7 @@
   width: 100%;
   max-width: 660px;
   margin: 0 auto;
-  padding: clamp(2.5rem, 1.5rem + 3vw, 4rem) clamp(1.25rem, 0.5rem + 2.5vw, 2rem) var(--sp-9);
+  padding: clamp(1rem, 0.75rem + 1vw, 1.75rem) clamp(1.25rem, 0.5rem + 2.5vw, 2rem) var(--sp-4);
 }
 
 /* Pages en grille : vidéos de témoignage, CV de répétiteurs. */
@@ -383,6 +385,13 @@
   max-width: 52ch;
 }
 
+/* Phrase prévue pour tenir sur une seule ligne dans la carte — la limite de
+   52ch la couperait. Elle se replie proprement dès que la largeur manque. */
+.cli-panneau__texte--ligne {
+  max-width: none;
+  text-wrap: pretty;
+}
+
 .cli-depot {
   margin-top: var(--sp-2);
 }
@@ -393,6 +402,34 @@
   max-width: 940px;
   width: 100%;
   margin: 0 auto;
+  /* Resserré : la page doit tenir dans un écran, sans défilement. */
+  padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  gap: var(--sp-3);
+}
+
+/* La zone de dépôt reprise ici est plus compacte que sur l'outil interne :
+   elle partage la hauteur avec la saisie, et la page ne doit pas déborder. */
+.cli-duo .depot {
+  padding: var(--sp-4);
+  gap: var(--sp-1);
+}
+
+.cli-duo .depot__illustration {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--sp-2);
+}
+
+.cli-duo .depot__titre {
+  font-size: 1.05rem;
+}
+
+.cli-duo .depot__sous-titre {
+  font-size: 0.85rem;
+}
+
+.cli-duo .depot__formats {
+  margin-top: var(--sp-3);
 }
 
 .cli-duo {
@@ -401,7 +438,12 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: stretch;
   gap: var(--sp-5);
-  margin-top: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+/* Titre légèrement réduit sur cette page : elle doit tenir dans un écran. */
+.cli-panneau--depot .cli-panneau__titre {
+  font-size: 1.3rem;
 }
 
 .cli-duo__voie {
@@ -447,9 +489,12 @@
 }
 
 .cli-saisie {
-  flex: 1;
+  /* `flex-basis: auto` : la hauteur vient de l'attribut `rows`, et c'est elle
+     qui règle la rangée. Avec `flex-basis: 0`, le calcul intrinsèque de la
+     grille gonflait le champ bien au-delà de son `min-height`. */
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 232px;
+  min-height: 0;
   padding: 0.85rem 1rem;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -486,10 +531,13 @@
   resize: none;
 }
 
+/* Consigne de saisie : en rouge, pour qu'elle ne se lise pas comme une
+   légende décorative. */
 .cli-duo__note {
   font-size: 0.79rem;
+  font-weight: 600;
   line-height: 1.5;
-  color: var(--ink-45);
+  color: var(--alerte);
 }
 
 .cli-fiche {
@@ -554,8 +602,8 @@
 .cli-google {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
-  margin-top: var(--sp-5);
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
 }
 
 /* Séparateur « ou » : un filet de part et d'autre du mot. */
@@ -1013,7 +1061,7 @@
   }
 
   .cli-saisie {
-    min-height: 180px;
+    min-height: 160px;
   }
 }
 

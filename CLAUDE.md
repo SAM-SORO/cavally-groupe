@@ -212,8 +212,20 @@ Sur la page d'envoi, **deux moyens côte à côte** de soumettre une demande :
 | **Droite** — champ de saisie | la liste tapée au clavier | un **`.docx` généré** par le serveur |
 
 Le client remplit **l'une OU l'autre**, et il n'y a **qu'un seul bouton
-d'envoi**. Si un document est joint, la saisie est désactivée avec une mention
-explicite : mieux vaut le dire que d'ignorer en silence ce qui aurait été tapé.
+d'envoi**. Si un document est joint, la saisie est simplement désactivée — son
+aspect grisé suffit à le dire.
+
+**Texte de l'interface : le strict nécessaire.** L'accroche tient sur une seule
+ligne (« Téléversez votre document ou saisissez la liste de vos fournitures,
+mais pas les deux à la fois ») et se replie si la largeur manque. Sous la
+saisie, une seule consigne — « Une ligne par article » — **en rouge**
+(`--alerte`), pour qu'elle ne se lise pas comme une légende décorative. Pas
+d'explication du traitement interne : le client n'a pas à savoir ce qu'on fait
+du document.
+
+⚠️ Le rouge est la **seule couleur hors charte** du projet, introduite à la
+demande expresse. Réservée aux mentions à ne pas manquer : ni fond, ni bordure,
+ni bouton.
 
 **Pourquoi générer un document plutôt que de relayer le texte** : l'entreprise
 doit toujours recevoir une **pièce jointe exploitable**, jamais un long message
@@ -353,7 +365,15 @@ entrer en collision avec `app.css`.
 
 **Épuré** : sur les pages clients, aucune information superflue. Inscription =
 5 champs (établissement explicitement facultatif). Connexion = 2 champs. Dépôt =
-une zone de glisser-déposer et un bouton, puis une confirmation.
+deux entrées et un bouton, puis une confirmation.
+
+**Tenir dans un écran.** Accueil, connexion et inscription doivent s'afficher
+**sans défilement** sur un portable 1366 × 768. C'est une contrainte de mise en
+page, pas un souhait : le rythme vertical (`.cli-auth`, `.cli-corps`,
+`.cli-carte`, `.cli-panneau--depot`) est calibré pour cela. Mesuré à 695 px de
+hauteur utile — accueil 533 px, connexion 577 px, inscription 682 px, et 643 px
+pour l'accueil dans son cas le plus chargé, quand le champ Téléphone s'ajoute.
+Toute addition de contenu sur ces trois pages doit être vérifiée à cette aune.
 
 **Formulaire d'inscription — deux colonnes responsives.** Cinq champs empilés
 obligent à dérouler la page sur un écran large alors que la place existe. Le

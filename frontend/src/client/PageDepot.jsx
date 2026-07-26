@@ -150,8 +150,9 @@ export default function PageDepot() {
     <CoquillePublique large>
       <section className="cli-panneau cli-panneau--depot">
         <h1 className="cli-panneau__titre">Déposer une liste de fournitures</h1>
-        <p className="cli-panneau__texte">
-          Envoyez votre document, ou tapez simplement votre liste. L’un ou l’autre suffit.
+        <p className="cli-panneau__texte cli-panneau__texte--ligne">
+          Téléversez votre document ou saisissez la liste de vos fournitures, mais pas les deux à
+          la fois.
         </p>
 
         {/* Deux entrées côte à côte ; elles s'empilent sur petit écran. */}
@@ -233,15 +234,11 @@ export default function PageDepot() {
               value={texte}
               onChange={(e) => setTexte(e.target.value)}
               placeholder={'5 cahiers 200 pages\n2 stylos bleus\n1 boîte de crayons de couleur\n…'}
-              rows={10}
+              rows={6}
               disabled={Boolean(fichier) || enCours}
               spellCheck="false"
             />
-            <p className="cli-duo__note">
-              {fichier
-                ? 'Votre document sera envoyé tel quel. Retirez-le pour saisir une liste à la place.'
-                : 'Une ligne par article. Nous en faisons un document propre pour notre équipe.'}
-            </p>
+            <p className="cli-duo__note">Une ligne par article</p>
           </div>
         </div>
 
@@ -268,7 +265,7 @@ export default function PageDepot() {
 
         {besoinConnexion && (
           <AppelConnexion
-            texte="Votre demande est prête. Identifiez-vous pour l’envoyer — cela prend quelques secondes."
+            texte="Votre demande est prête. Identifiez-vous pour l’envoyer - cela prend quelques secondes."
             retour="/"
           />
         )}

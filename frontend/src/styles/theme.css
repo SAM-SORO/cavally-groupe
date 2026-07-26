@@ -22,6 +22,12 @@
   --brand-a20: rgba(255, 184, 0, 0.2);
   --brand-a35: rgba(255, 184, 0, 0.35);
 
+  /* — Rouge d'avertissement —
+     Seule couleur hors charte, introduite à la demande expresse pour les
+     mentions à ne pas manquer. Réservée à cet usage : ni fond, ni bordure,
+     ni bouton. Contraste ~5,1:1 sur blanc. */
+  --alerte: #d32f2f;
+
   /* — Neutres : noir sur blanc — */
   --ink: #000000; /* titres */
   --ink-80: #333333; /* corps de texte */
