@@ -370,10 +370,15 @@ deux entrées et un bouton, puis une confirmation.
 **Tenir dans un écran.** Accueil, connexion et inscription doivent s'afficher
 **sans défilement** sur un portable 1366 × 768. C'est une contrainte de mise en
 page, pas un souhait : le rythme vertical (`.cli-auth`, `.cli-corps`,
-`.cli-carte`, `.cli-panneau--depot`) est calibré pour cela. Mesuré à 695 px de
-hauteur utile — accueil 533 px, connexion 577 px, inscription 682 px, et 643 px
-pour l'accueil dans son cas le plus chargé, quand le champ Téléphone s'ajoute.
-Toute addition de contenu sur ces trois pages doit être vérifiée à cette aune.
+`.cli-carte`) est calibré pour cela.
+
+⚠️ **La place se prend sur les marges, jamais sur les deux zones de dépôt.**
+Elles font la page et doivent rester généreuses (~320 px chacune). Mesuré à
+695 px de hauteur utile : accueil 609 px, connexion 577 px, inscription 682 px,
+et 688 px pour l'accueil dans son cas le plus chargé — quand le champ Téléphone
+s'ajoute, pour un compte ouvert avec Google qui n'a pas encore déposé. Ce
+dernier cas ne laisse que 7 px : **tout ajout de contenu sur l'accueil doit
+être mesuré**, pas estimé.
 
 **Formulaire d'inscription — deux colonnes responsives.** Cinq champs empilés
 obligent à dérouler la page sur un écran large alors que la place existe. Le

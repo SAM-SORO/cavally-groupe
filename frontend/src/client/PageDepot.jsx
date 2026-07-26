@@ -234,7 +234,7 @@ export default function PageDepot() {
               value={texte}
               onChange={(e) => setTexte(e.target.value)}
               placeholder={'5 cahiers 200 pages\n2 stylos bleus\n1 boîte de crayons de couleur\n…'}
-              rows={6}
+              rows={9}
               disabled={Boolean(fichier) || enCours}
               spellCheck="false"
             />
@@ -243,7 +243,8 @@ export default function PageDepot() {
         </div>
 
         {/* Le compte existe mais n'a pas de numéro : c'est ici qu'il sert,
-            c'est donc ici qu'on le demande — une seule fois. */}
+            c'est donc ici qu'on le demande — une seule fois. Sans ligne
+            d'aide : le libellé suffit, et la page doit tenir dans l'écran. */}
         {client && !client.contact && (
           <Champ
             libelle="Téléphone"
@@ -253,7 +254,6 @@ export default function PageDepot() {
             autoComplete="tel"
             inputMode="tel"
             placeholder="+225 07 97 99 19 99"
-            aide="C’est par là que notre équipe vous recontacte."
           />
         )}
 

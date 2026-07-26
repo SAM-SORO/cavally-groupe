@@ -48,13 +48,13 @@
 }
 
 .cli-auth__marque img {
-  height: 28px;
+  height: 34px;
   width: auto;
 }
 
 .cli-carte {
   width: 100%;
-  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  padding: clamp(1.5rem, 1rem + 2vw, 2.25rem);
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
   background: var(--surface);
@@ -179,7 +179,7 @@
 
 .cli-champ__saisie {
   width: 100%;
-  padding: 0.62rem 0.9rem;
+  padding: 0.72rem 0.9rem;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--white);
@@ -415,17 +415,17 @@
 }
 
 .cli-duo .depot__illustration {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   margin-bottom: var(--sp-2);
 }
 
 .cli-duo .depot__titre {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
 }
 
 .cli-duo .depot__sous-titre {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
 }
 
 .cli-duo .depot__formats {
