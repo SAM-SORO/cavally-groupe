@@ -227,6 +227,14 @@ du document.
 demande expresse. Réservée aux mentions à ne pas manquer : ni fond, ni bordure,
 ni bouton.
 
+**Les messages d'erreur sont du texte, pas des blocs.** `.cli-alerte` n'a ni
+fond, ni bordure, ni encadré : du rouge (`--alerte`) sur la surface de la carte,
+et rien d'autre. Un cadre et un aplat pesaient plus lourd que le message
+qu'ils portaient — sur une carte de connexion, ils en occupaient le tiers. La
+couleur suffit à distinguer l'erreur du reste. Vaut pour les sept endroits qui
+affichent une erreur (connexion, inscription, connexion admin, dépôt, modal
+répétiteur, liste des répétiteurs, bouton Google).
+
 **Pourquoi générer un document plutôt que de relayer le texte** : l'entreprise
 doit toujours recevoir une **pièce jointe exploitable**, jamais un long message
 qui se perd dans une conversation WhatsApp. `backend/app/redaction.py` fabrique

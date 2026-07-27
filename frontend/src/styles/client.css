@@ -242,15 +242,15 @@
    3. Alertes et boutons
    -------------------------------------------------------------------------- */
 
+/* Message d'erreur : du texte, rien d'autre.
+   Le cadre et l'aplat pesaient plus lourd que le message qu'ils portaient, et
+   sur un formulaire de connexion ils occupaient le tiers de la carte. Le rouge
+   suffit à distinguer l'erreur du reste. */
 .cli-alerte {
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--brand);
-  border-left-width: 3px;
-  border-radius: var(--r-md);
-  background: var(--brand-wash);
-  font-size: 0.87rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   line-height: 1.5;
-  color: var(--ink-80);
+  color: var(--alerte);
 }
 
 .cli-bouton-bloc {

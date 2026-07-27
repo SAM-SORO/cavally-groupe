@@ -1,4 +1,4 @@
-# Cavally Livres — Plateforme de devis
+# Cavally Livres - Plateforme de devis
 
 Deux espaces, **volontairement indépendants**.
 
