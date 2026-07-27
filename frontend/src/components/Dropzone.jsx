@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { ACCEPT_ATTR, FORMATS_ACCEPTES, extensionDe, formaterTaille } from '../api.js'
+import { useCollageFichier } from './collage.js'
 import { Close, DocumentStack, Sheet } from './Icons.jsx'
 
 const LIBELLES_FORMAT = {
@@ -25,6 +26,9 @@ export default function Dropzone({ fichier, onFichier, onEffacer, onLancer, erre
     const choisi = liste?.[0]
     if (choisi) onFichier(choisi)
   }
+
+  // Ctrl+V : une capture d'écran vaut un dépôt.
+  useCollageFichier(useCallback((colle) => onFichier(colle), [onFichier]))
 
   const auDepot = (evenement) => {
     evenement.preventDefault()
@@ -116,7 +120,9 @@ export default function Dropzone({ fichier, onFichier, onEffacer, onLancer, erre
           {survol ? 'Relâchez pour analyser' : 'Déposez la liste de fournitures'}
         </span>
         <span className="depot__sous-titre">
-          Glissez le fichier ici, ou <span className="depot__lien">parcourez vos documents</span>
+          Glissez le fichier ici, <span className="depot__lien">parcourez vos documents</span> ou
+          collez une capture <kbd className="touche">Ctrl</kbd>
+          <kbd className="touche">V</kbd>
         </span>
         <span className="depot__formats">
           {FORMATS_ACCEPTES.filter((f) => f !== '.jpeg').map((format) => (

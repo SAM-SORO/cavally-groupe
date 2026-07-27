@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
+import { useCollageFichier } from '../components/collage.js'
 import { CheckSeal, Close, DocumentStack, Spinner } from '../components/Icons.jsx'
 import {
   ACCEPT_CLIENT,
@@ -48,7 +49,8 @@ export default function PageDepot() {
   // plutôt que de l'ignorer en silence.
   const pretAEnvoyer = Boolean(fichier) || saisie.length > 0
 
-  const choisir = (liste) => {
+  // Référence stable : `useCollageFichier` la met en dépendance de son écouteur.
+  const choisir = useCallback((liste) => {
     const candidat = liste?.[0]
     if (!candidat) return
     if (!formatSupporte(candidat)) {
@@ -63,7 +65,7 @@ export default function PageDepot() {
     }
     setErreur(null)
     setFichier(candidat)
-  }
+  }, [])
 
   const auDepot = (evenement) => {
     evenement.preventDefault()
@@ -71,6 +73,14 @@ export default function PageDepot() {
     setSurvol(false)
     choisir(evenement.dataTransfer?.files)
   }
+
+  // Ctrl+V : une capture d'écran vaut un dépôt. Le collage de TEXTE, lui,
+  // continue d'aller dans la zone de saisie — `useCollageFichier` ne réagit
+  // qu'aux fichiers.
+  useCollageFichier(
+    useCallback((colle) => choisir([colle]), [choisir]),
+    statut !== 'envoi' && statut !== 'confirme',
+  )
 
   const envoyer = async () => {
     if (!pretAEnvoyer) return
@@ -206,8 +216,9 @@ export default function PageDepot() {
                   {survol ? 'Relâchez pour ajouter' : 'Déposez votre liste'}
                 </span>
                 <span className="depot__sous-titre">
-                  Glissez le fichier ici, ou{' '}
-                  <span className="depot__lien">parcourez vos documents</span>
+                  Glissez le fichier, <span className="depot__lien">parcourez</span> ou collez une
+                  capture <kbd className="touche">Ctrl</kbd>
+                  <kbd className="touche">V</kbd>
                 </span>
                 <span className="depot__formats">
                   {FORMATS_CLIENT.filter((f) => f !== '.jpeg').map((format) => (

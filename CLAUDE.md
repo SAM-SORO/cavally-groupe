@@ -136,7 +136,20 @@ Se caler sur **le fichier d'exemple fourni**. Structure attendue :
 L'UI doit paraître **soignée et pro** (livrable client). Directives :
 
 - **Identité visuelle** : logo dans le header, couleurs **exclusivement** issues de la charte fournie, typographie cohérente, espacements généreux et réguliers.
-- **Zone d'upload** : glisser-déposer + bouton, accepte `.docx`, `.pdf`, images. Aperçu du fichier. Formats non supportés → message clair.
+- **Zone d'upload** : glisser-déposer + bouton + **coller (Ctrl+V)**, accepte `.docx`, `.pdf`, images. Aperçu du fichier. Formats non supportés → message clair.
+
+> **Coller une capture** — `components/collage.js`, partagé par l'outil interne
+> et l'espace clients. On écoute l'évènement `paste`, qui **ne demande aucune
+> permission** : le navigateur livre le contenu parce que l'utilisateur a fait
+> le geste. C'est `navigator.clipboard.read()` qui en exigerait une — on ne
+> s'en sert pas.
+>
+> ⚠️ Une capture collée arrive souvent **sans nom exploitable**. Comme tout le
+> reste décide du format à partir de l'extension, elle serait refusée à tort :
+> `normaliserFichierColle()` lui en attribue une à partir du type MIME.
+>
+> Un collage de **texte** est ignoré (`clipboardData.files` est vide), pour que
+> la saisie libre de l'accueil continue de fonctionner.
 - **États explicites** : repos → envoi → analyse en cours (loader) → résultats → erreur. Jamais d'écran figé sans retour visuel.
 - **Tableau de résultats éditable** : colonnes Désignation, Qté, Prix unitaire (champ de saisie), Montant (**calculé en direct** = Qté × Prix), et Total mis à jour en temps réel. Désignation et Qté restent corrigeables (l'humain valide avant génération).
 - **Bouton « Générer / Télécharger l'Excel »** : appelle le backend et récupère le `.xlsx`.
