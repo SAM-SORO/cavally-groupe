@@ -497,6 +497,17 @@ aux routes de l'espace clients.
 L'outil interne compte deux pages, reliées par la navigation de son en-tête :
 `/interne` (devis) et `/interne/repetiteurs` (tableau de bord des CV).
 
+**En-tête interne — menu déroulant sous 900 px.** La barre porte quatre blocs
+(marque, navigation, état du service, compte) : au-delà d'une certaine
+étroitesse ils ne tiennent plus sur une ligne. Ils passent alors dans un
+déroulant ouvert par un bouton à trois traits, refermé par Échap, par un clic
+au dehors ou par le choix d'un lien.
+
+⚠️ `.entete__inner` **n'a pas** `flex-wrap` — contrairement à la barre
+publique. Y poser un `flex-basis: 100%` pour faire passer un bloc à la ligne
+ne marche donc pas : les éléments se chevauchent au lieu de se replier. C'est
+le déroulant qui gère l'étroitesse, pas le retour à la ligne.
+
 ⚠️ **Deux vues, deux jeux de champs.** `GET /api/repetiteurs` sert la page
 publique et n'expose **ni téléphone ni email** ; `GET /api/admin/repetiteurs`
 sert l'équipe et les donne, parce qu'elle doit pouvoir rappeler. Ne jamais

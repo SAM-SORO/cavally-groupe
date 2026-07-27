@@ -84,6 +84,14 @@ export function Close({ className }) {
   )
 }
 
+export function Menu({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+      <path d="M3.2 5.5h13.6M3.2 10h13.6M3.2 14.5h13.6" {...stroke} strokeWidth={1.8} />
+    </svg>
+  )
+}
+
 export function Lecture({ className }) {
   return (
     <svg className={className} viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">

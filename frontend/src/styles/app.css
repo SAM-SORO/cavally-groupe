@@ -1169,8 +1169,8 @@
   display: flex;
   align-items: center;
   gap: var(--sp-1);
-  margin-right: auto;
-  margin-left: var(--sp-5);
+  /* `margin-right: auto` (section 16) pousse l'état du service et le compte
+     à droite ; il est neutralisé dans le déroulant. */
 }
 
 .entete__lien {
@@ -1415,13 +1415,141 @@
   color: var(--ink-45);
 }
 
-@media (max-width: 720px) {
+/* --------------------------------------------------------------------------
+   16. En-tête interne — passage au menu déroulant
+   -------------------------------------------------------------------------- */
+
+/* Ancre du déroulant, qui se positionne sous la barre. */
+.entete__inner {
+  position: relative;
+}
+
+/* Grand écran : navigation, état du service et compte sur une seule ligne. */
+.entete__menu {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex: 1;
+  min-width: 0;
+}
+
+.entete__nav {
+  margin-right: auto;
+}
+
+/* Le bouton à trois traits n'existe que sur écran étroit. */
+.entete__burger {
+  display: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  color: var(--ink);
+  transition:
+    background-color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.entete__burger:hover {
+  border-color: var(--ink-45);
+  background: var(--surface-sunken);
+}
+
+/* Sous ce seuil, les quatre blocs ne tiennent plus sur une ligne : ils se
+   chevauchaient. Ils passent dans un déroulant. */
+@media (max-width: 900px) {
+  .entete__burger {
+    display: grid;
+  }
+
+  .entete__menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+    padding: var(--sp-4) clamp(1.25rem, 0.5rem + 2.5vw, 2.5rem) var(--sp-5);
+    background: var(--white);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow-md);
+    animation: entete-deroule var(--t-base) var(--ease-out) both;
+  }
+
+  .entete__menu.est-ouvert {
+    display: flex;
+  }
+
   .entete__nav {
-    order: 3;
-    flex-basis: 100%;
-    margin-left: 0;
-    justify-content: center;
-    padding-top: var(--sp-2);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-1);
+    margin: 0;
+  }
+
+  .entete__lien {
+    padding: 0.6rem 0.75rem;
+  }
+
+  /* Le trait de page courante passe à gauche : en colonne, un soulignement
+     ne se lit plus comme un onglet. */
+  .entete__lien.est-actif {
+    background: var(--brand-wash);
+  }
+
+  .entete__lien.est-actif::after {
+    left: 0;
+    right: auto;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    width: 2px;
+    height: auto;
+  }
+
+  .entete__droite {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+    padding-top: var(--sp-3);
     border-top: 1px solid var(--line-soft);
+  }
+
+  .entete__admin {
+    justify-content: space-between;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .entete__admin-nom {
+    max-width: none;
+  }
+
+  .statut {
+    align-self: flex-start;
+  }
+}
+
+@keyframes entete-deroule {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Le nom du produit prend trop de place sur un téléphone ; le logo suffit. */
+@media (max-width: 480px) {
+  .marque__filet,
+  .marque__produit {
+    display: none;
   }
 }
