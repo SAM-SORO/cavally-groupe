@@ -491,6 +491,22 @@ aux routes de l'espace clients.
 | `GET /api/health` | public (aucun secret : état, formats, drapeaux) |
 | `POST /api/admin/connexion` | public |
 | `POST /api/admin/deconnexion`, `GET /api/admin/moi` | admin |
+| `GET /api/admin/repetiteurs` | **admin uniquement** — vue équipe des CV |
+| `DELETE /api/admin/repetiteurs/{id}` | **admin uniquement** |
+
+L'outil interne compte deux pages, reliées par la navigation de son en-tête :
+`/interne` (devis) et `/interne/repetiteurs` (tableau de bord des CV).
+
+⚠️ **Deux vues, deux jeux de champs.** `GET /api/repetiteurs` sert la page
+publique et n'expose **ni téléphone ni email** ; `GET /api/admin/repetiteurs`
+sert l'équipe et les donne, parce qu'elle doit pouvoir rappeler. Ne jamais
+fusionner les deux schémas de sortie — ce serait publier des données
+personnelles sur une page ouverte.
+
+Supprimer un profil retire la ligne **puis** le fichier du disque, dans cet
+ordre : un commit en échec ne doit pas laisser un profil pointant vers un CV
+absent. Le **compte client n'est pas touché** — la personne perd son profil de
+répétiteur, pas son accès à la plateforme.
 
 Côté interface, `/interne` est derrière `RouteAdmin` et redirige vers
 `/interne/connexion`. **Ce garde-fou n'est qu'un confort** : le contrôle qui

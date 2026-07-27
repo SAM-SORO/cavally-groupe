@@ -258,18 +258,30 @@
   padding: 0.9rem 1.35rem;
 }
 
+/* Action de session — « Se connecter », « Se déconnecter ».
+   En simple texte, elle se confondait avec le reste de la barre. Elle prend
+   donc un contour : visible sans venir concurrencer le bouton jaune, qui
+   reste la seule action principale de la page. */
 .cli-lien-discret {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--ink-60);
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-80);
+  text-decoration: none;
+  white-space: nowrap;
   transition:
     background-color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
     color var(--t-fast) var(--ease);
 }
 
 .cli-lien-discret:hover {
+  border-color: var(--ink-45);
   background: var(--surface-sunken);
   color: var(--ink);
 }

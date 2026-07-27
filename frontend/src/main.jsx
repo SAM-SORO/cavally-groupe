@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import App from './App.jsx'
 import { FournisseurAdmin } from './admin/AdminContext.jsx'
 import PageConnexionAdmin from './admin/PageConnexionAdmin.jsx'
+import PageRepetiteursAdmin from './admin/PageRepetiteursAdmin.jsx'
 import RouteAdmin from './admin/RouteAdmin.jsx'
 import { FournisseurAuth } from './client/AuthContext.jsx'
 import PageConnexion from './client/PageConnexion.jsx'
@@ -43,6 +44,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               element={
                 <RouteAdmin>
                   <App />
+                </RouteAdmin>
+              }
+            />
+            <Route
+              path="/interne/repetiteurs"
+              element={
+                <RouteAdmin>
+                  <PageRepetiteursAdmin />
                 </RouteAdmin>
               }
             />

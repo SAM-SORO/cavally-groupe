@@ -1160,3 +1160,268 @@
     grid-template-columns: minmax(70px, 84px) 1fr 24px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   14. Navigation de l'outil interne
+   -------------------------------------------------------------------------- */
+
+.entete__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-right: auto;
+  margin-left: var(--sp-5);
+}
+
+.entete__lien {
+  position: relative;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--r-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-60);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.entete__lien:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.entete__lien.est-actif {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Le trait de la charte marque la page courante. */
+.entete__lien.est-actif::after {
+  content: '';
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  bottom: 0.05rem;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+}
+
+/* --------------------------------------------------------------------------
+   15. Tableau de bord — CV des répétiteurs
+   -------------------------------------------------------------------------- */
+
+.tdb__entete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+.tdb__titre {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 1.3rem + 1vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.tdb__chapo {
+  margin-top: var(--sp-1);
+  font-size: 0.93rem;
+  color: var(--ink-60);
+}
+
+.tdb__compte {
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--r-pill);
+  background: var(--brand-veil);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.tdb__vide {
+  padding: var(--sp-9) var(--sp-5);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+  font-size: 0.94rem;
+  color: var(--ink-45);
+}
+
+/* Le tableau défile seul si l'écran est étroit : la page, elle, ne bouge pas. */
+.tdb__cadre {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.tdb__table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.tdb__table th {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-sunken);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-60);
+  text-align: left;
+}
+
+.tdb__table td {
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.tdb__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tdb__table tbody tr:hover {
+  background: var(--brand-wash);
+}
+
+.tdb__nom,
+.tdb__contact,
+.tdb__date {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tdb__date {
+  font-weight: 500;
+}
+
+.tdb__secondaire {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.79rem;
+  color: var(--ink-45);
+}
+
+.tdb__cv {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-80);
+  text-decoration: none;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease);
+}
+
+.tdb__cv:hover {
+  border-color: var(--brand);
+  background: var(--brand-veil);
+  color: var(--ink);
+}
+
+.tdb__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tdb__retirer {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--r-sm);
+  color: var(--ink-45);
+  transition:
+    background-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.tdb__retirer:hover {
+  background: var(--surface-sunken);
+  color: var(--alerte);
+}
+
+/* Confirmation posée dans la ligne : on voit ce qu'on supprime. */
+.tdb__confirme {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.tdb__confirme-texte {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--alerte);
+}
+
+.tdb__bouton {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-80);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease);
+}
+
+.tdb__bouton:hover:not(:disabled) {
+  border-color: var(--ink-45);
+  background: var(--surface-sunken);
+}
+
+.tdb__bouton--danger {
+  border-color: var(--alerte);
+  color: var(--alerte);
+}
+
+.tdb__bouton--danger:hover:not(:disabled) {
+  border-color: var(--alerte);
+  background: var(--alerte);
+  color: var(--white);
+}
+
+.tdb__bouton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tdb__note {
+  margin-top: var(--sp-4);
+  font-size: 0.82rem;
+  color: var(--ink-45);
+}
+
+@media (max-width: 720px) {
+  .entete__nav {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+    justify-content: center;
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--line-soft);
+  }
+}

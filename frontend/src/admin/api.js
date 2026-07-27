@@ -52,3 +52,15 @@ export const deconnecterAdmin = () =>
   appeler('/api/admin/deconnexion', { methode: 'POST', json: false })
 
 export const recupererAdmin = () => appeler('/api/admin/moi')
+
+// — Tableau de bord : CV des répétiteurs —
+
+/** Vue équipe : plus complète que la liste publique (téléphone, email). */
+export const listerRepetiteurs = () => appeler('/api/admin/repetiteurs')
+
+/** Retire le profil et son CV. Le compte client, lui, n'est pas touché. */
+export const supprimerRepetiteur = (id) =>
+  appeler(`/api/admin/repetiteurs/${id}`, { methode: 'DELETE', json: false })
+
+/** Chemin renvoyé par l'API → URL utilisable dans un lien. */
+export const urlApi = (chemin) => `${BASE}${chemin}`
