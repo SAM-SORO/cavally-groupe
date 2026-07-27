@@ -227,6 +227,15 @@ du document.
 demande expresse. Réservée aux mentions à ne pas manquer : ni fond, ni bordure,
 ni bouton.
 
+**Aucun message anglais ne doit atteindre le client.** Pydantic rédige ses
+erreurs de validation en anglais et en jargon — « value is not a valid email
+address: An email address must have an @-sign. ». `backend/app/validation.py`
+les reformule, via un unique gestionnaire de `RequestValidationError` posé sur
+l'application : toute route qui validera une entrée demain en bénéficie sans
+rien écrire. Le serveur renvoie alors `detail` sous forme de **phrase**, pas de
+liste, et une seule à la fois — corriger champ par champ vaut mieux qu'un pavé
+de cinq phrases dans une alerte sans cadre.
+
 **Les messages d'erreur sont du texte, pas des blocs.** `.cli-alerte` n'a ni
 fond, ni bordure, ni encadré : du rouge (`--alerte`) sur la surface de la carte,
 et rien d'autre. Un cadre et un aplat pesaient plus lourd que le message

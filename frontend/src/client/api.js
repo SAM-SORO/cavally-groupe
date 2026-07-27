@@ -55,8 +55,11 @@ async function extraireMessage(reponse) {
   try {
     const corps = await reponse.json()
     const detail = corps?.detail
+    // Cas normal : le serveur renvoie une phrase, déjà en français — il
+    // traduit les erreurs de validation avant de répondre (app/validation.py).
     if (typeof detail === 'string') return detail
-    // Erreurs de validation Pydantic : on remonte le premier message utile.
+    // Filet : si un jour le serveur laissait passer la liste brute de Pydantic,
+    // on remonte le premier message plutôt que « une erreur est survenue ».
     if (Array.isArray(detail) && detail.length) {
       return detail[0]?.msg?.replace(/^Value error,\s*/, '') ?? 'Données invalides.'
     }

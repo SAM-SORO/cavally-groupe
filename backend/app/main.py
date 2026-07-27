@@ -24,6 +24,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.exc import OperationalError
@@ -40,6 +41,7 @@ from .routes_client import FORMATS_CLIENT, auth as routeur_auth, demandes as rou
 from .routes_repetiteurs import router as routeur_repetiteurs
 from .securite import admin_courant, admin_optionnel
 from .stockage import FORMATS_CV
+from .validation import premier_message
 from .whatsapp import obtenir_relais
 
 logging.basicConfig(
@@ -89,6 +91,19 @@ app.include_router(routeur_auth)
 app.include_router(routeur_demandes)
 app.include_router(routeur_repetiteurs)
 app.include_router(routeur_admin)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_en_francais(_requete, exception: RequestValidationError) -> JSONResponse:
+    """Traduit les erreurs de saisie : Pydantic les redige en anglais.
+
+    Sans cela, un client se voit repondre « value is not a valid email address:
+    An email address must have an @-sign. » — de l'anglais, et du jargon.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": premier_message(exception.errors())},
+    )
 
 
 @app.exception_handler(OperationalError)
