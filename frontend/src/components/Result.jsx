@@ -94,11 +94,6 @@ export default function Result({ resultat, onRecommencer }) {
       <p className="resultat__fichier" title={nomFichier}>
         {nomFichier}
       </p>
-
-      <p className="resultat__rappel">
-        La colonne <strong>Prix Unitaire</strong> est volontairement vide : renseignez-la directement dans le
-        fichier, les colonnes <strong>Total HT</strong> et <strong>Total estimatif</strong> se recalculent seules.
-      </p>
     </section>
   )
 }

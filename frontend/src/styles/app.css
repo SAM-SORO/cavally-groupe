@@ -923,21 +923,6 @@
   white-space: nowrap;
 }
 
-.resultat__rappel {
-  padding: var(--sp-4);
-  border-left: 3px solid var(--brand);
-  border-radius: 0 var(--r-md) var(--r-md) 0;
-  background: var(--brand-wash);
-  font-size: 0.86rem;
-  line-height: 1.6;
-  color: var(--ink-80);
-}
-
-.resultat__rappel strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-
 /* --------------------------------------------------------------------------
    9. Échec
    -------------------------------------------------------------------------- */
