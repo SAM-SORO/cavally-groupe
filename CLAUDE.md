@@ -603,6 +603,28 @@ fichiers de la plateforme. Deux précautions :
 
 Formats acceptés : `.pdf`, `.docx`, `.doc`.
 
+### 14.2 bis Page Répétiteur — un seul bouton pour tout le parcours
+
+La **liste des CV est publique** : tout le monde la voit, connecté ou non.
+C'est l'objet de la page.
+
+Le dépôt tient en **un unique bouton, « Soumettre mon CV »**, dans le style
+principal de la charte. Il prend en charge les trois états, sans que
+l'utilisateur ait à comprendre qu'un compte est nécessaire :
+
+| État | Ce que fait le bouton |
+|---|---|
+| non connecté | conduit à `/connexion?retour=%2Frepetiteurs%3Fdeposer%3D1`, puis **ramène ici modal ouvert** |
+| connecté, pas répétiteur | ouvre le formulaire de dépôt |
+| connecté, déjà répétiteur | devient « Mettre à jour mon CV » — la contrainte d'unicité en base interdit le doublon |
+
+Au retour de la connexion, le paramètre `deposer` rouvre le modal puis **est
+retiré de l'adresse** : un rafraîchissement ne doit pas le rouvrir.
+
+❌ **Ne pas remettre d'encart « Se connecter / Créer un compte » sur cette
+page.** Deux boutons pour une seule intention alourdissaient l'en-tête, et la
+navbar porte déjà ces deux liens pour un visiteur anonyme.
+
 ### 14.3 Endpoints répétiteurs
 
 | Méthode | Route | Protégée | Rôle |

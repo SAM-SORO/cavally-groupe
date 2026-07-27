@@ -831,6 +831,54 @@
    10. Répétiteurs — grille de profils
    -------------------------------------------------------------------------- */
 
+/* En-tête de la page : ce qu'on lit à gauche, ce qu'on fait à droite.
+   Un seul bouton, qui prend en charge tout le parcours de dépôt — y compris
+   la connexion si elle manque. */
+.rep-entete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-7);
+}
+
+.rep-entete__texte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+/* Le chapo remonte de lui-même dans `.cli-section` ; ici c'est le `gap` qui
+   règle l'espacement. */
+.rep-entete__texte .cli-section__chapo {
+  margin-top: 0;
+}
+
+.rep-vide {
+  padding: var(--sp-9) var(--sp-5);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+  font-size: 0.94rem;
+  color: var(--ink-45);
+}
+
+.rep-vide__titre {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rep-vide__texte {
+  margin-top: var(--sp-1);
+  font-size: 0.89rem;
+  color: var(--ink-45);
+}
+
 .rep-carte {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
